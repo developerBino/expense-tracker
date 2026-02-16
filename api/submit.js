@@ -38,7 +38,7 @@ export default async function handler(req, res) {
     console.log('✅ Validation passed');
 
     // Try to forward to Google Apps Script
-    const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/d/AKfycby7Y_Kh_v-_WeaVOM0g-giBix6d-d8BsDWWbQGkGcujBB9aqjR2Sy8jMbMY6KmrUCgrDQ/usercallback';
+    const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwTYiTPFDFu33_QI4zQVuOJBBoikYOwPehiSBWbmq3Rc7bxcZy19iSAM7zjPFRGqPhFyQ/exec';
 
     console.log('🔄 Forwarding to Google Apps Script...');
 

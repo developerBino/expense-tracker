@@ -1,0 +1,10 @@
+{
+  "buildCommand": "echo 'Static site with serverless functions'",
+  "outputDirectory": ".",
+  "functions": {
+    "api/**/*.js": {
+      "memory": 1024,
+      "maxDuration": 60
+    }
+  }
+}

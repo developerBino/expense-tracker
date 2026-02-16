@@ -2,7 +2,8 @@
 // Configuration
 // ==========================================
 
-const API_URL = "https://script.google.com/macros/d/AKfycby7Y_Kh_v-_WeaVOM0g-giBix6d-d8BsDWWbQGkGcujBB9aqjR2Sy8jMbMY6KmrUCgrDQ/usercallback";
+// Use the Vercel API endpoint (no CORS issues since it's same origin)
+const API_URL = "/api/submit";
 
 // ==========================================
 // Data Structure

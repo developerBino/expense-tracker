@@ -64,9 +64,9 @@ function doPost(e) {
  * Handle CORS preflight requests
  */
 function doOptions(e) {
-  return HtmlService.createHtmlOutput("")
+  return ContentService.createTextOutput("")
     .setHeader("Access-Control-Allow-Origin", "*")
-    .setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
+    .setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
     .setHeader("Access-Control-Allow-Headers", "Content-Type");
 }
 
@@ -314,7 +314,7 @@ function deleteTransaction(rowNumber) {
 // ==========================================
 
 /**
- * Build standardized response
+ * Build standardized response with proper CORS headers
  */
 function buildResponse(success, message, data = null) {
   const response = {
@@ -327,11 +327,11 @@ function buildResponse(success, message, data = null) {
     response.data = data;
   }
 
+  // Use ContentService for JSON with CORS
   return ContentService.createTextOutput(JSON.stringify(response))
     .setMimeType(ContentService.MimeType.JSON)
     .setHeader("Access-Control-Allow-Origin", "*")
-    .setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
-    .setHeader("Access-Control-Allow-Headers", "Content-Type");
+    .setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE");
 }
 
 // ==========================================

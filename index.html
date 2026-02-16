@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMS Expense Tracker</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1 class="title">SMS Expense Tracker</h1>
+            <p class="subtitle">Paste your bank SMS to track expenses</p>
+        </header>
+
+        <!-- Input Section -->
+        <section class="card input-section">
+            <div class="form-group">
+                <label for="smsInput" class="label">Bank SMS Message</label>
+                <textarea
+                    id="smsInput"
+                    class="textarea"
+                    placeholder="Paste your UAE bank SMS here... e.g., 'AED 45.75 spent at Carrefour on 15-02-2026 using Debit Card ending 1234'"
+                    rows="4"
+                ></textarea>
+            </div>
+
+            <button id="parseBtn" class="btn btn-primary">
+                <span class="btn-text">Parse Message</span>
+            </button>
+        </section>
+
+        <!-- Preview Section -->
+        <section id="previewSection" class="card preview-section hidden">
+            <h2 class="section-title">Preview</h2>
+
+            <div class="preview-grid">
+                <div class="preview-item">
+                    <span class="preview-label">Date</span>
+                    <span id="previewDate" class="preview-value">-</span>
+                </div>
+                <div class="preview-item">
+                    <span class="preview-label">Amount</span>
+                    <span id="previewAmount" class="preview-value">-</span>
+                </div>
+                <div class="preview-item">
+                    <span class="preview-label">Currency</span>
+                    <span id="previewCurrency" class="preview-value">-</span>
+                </div>
+                <div class="preview-item">
+                    <span class="preview-label">Type</span>
+                    <span id="previewType" class="preview-value">-</span>
+                </div>
+                <div class="preview-item">
+                    <span class="preview-label">Merchant</span>
+                    <span id="previewMerchant" class="preview-value">-</span>
+                </div>
+                <div class="preview-item">
+                    <span class="preview-label">Card Last 4</span>
+                    <span id="previewCard" class="preview-value">-</span>
+                </div>
+                <div class="preview-item">
+                    <span class="preview-label">Category</span>
+                    <span id="previewCategory" class="preview-value">-</span>
+                </div>
+            </div>
+
+            <div class="raw-message">
+                <span class="raw-label">Raw Message</span>
+                <p id="previewRaw" class="raw-text"></p>
+            </div>
+
+            <button id="saveBtn" class="btn btn-success">
+                <span class="btn-text">Save to Google Sheets</span>
+            </button>
+        </section>
+
+        <!-- Monthly Summary Section -->
+        <section class="card summary-section">
+            <h2 class="section-title">Monthly Summary</h2>
+
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <span class="summary-label">Total Debit</span>
+                    <span id="totalDebit" class="summary-value">AED 0.00</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Total Credit</span>
+                    <span id="totalCredit" class="summary-value">AED 0.00</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Net Total</span>
+                    <span id="netTotal" class="summary-value">AED 0.00</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Transactions</span>
+                    <span id="transactionCount" class="summary-value">0</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Error Message -->
+        <div id="errorMessage" class="error-message hidden"></div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>

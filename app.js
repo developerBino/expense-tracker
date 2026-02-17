@@ -596,28 +596,50 @@ async function fetchTransactionsFromGoogleSheets() {
         }
 
         const responseText = await response.text();
+        console.log('📋 Raw response from API:', responseText);
+        
         const responseData = JSON.parse(responseText);
+        console.log('📦 Parsed response data:', responseData);
+        console.log('📊 Response success:', responseData.success);
+        console.log('📊 Response data array:', responseData.data);
+        console.log('📊 Response count:', responseData.count);
 
         if (responseData.success && responseData.data) {
             console.log('✅ Retrieved', responseData.count, 'transactions from Google Sheets');
+            
+            if (responseData.data.length === 0) {
+                console.warn('⚠️ Data array is empty');
+                return [];
+            }
+            
+            // Log the first transaction to see the structure
+            console.log('🔍 First transaction structure:', JSON.stringify(responseData.data[0]));
+            
             // Convert from Google Sheets format to our format
-            const transactions = responseData.data.map(row => ({
-                timestamp: row.timestamp || '',
-                user: row.user || '',
-                date: row.date || '',
-                amount: parseFloat(row.amount) || 0,
-                currency: row.currency || 'AED',
-                type: row.type || 'Debit',
-                merchant: row.merchant || '',
-                card_last4: row.card_last_4 || '',
-                category: row.category || 'Other',
-                raw: row.raw_message || ''
-            }));
+            const transactions = responseData.data.map((row, index) => {
+                console.log(`📄 Processing transaction ${index}:`, row);
+                const converted = {
+                    timestamp: row.timestamp || '',
+                    user: row.user || '',
+                    date: row.date || '',
+                    amount: parseFloat(row.amount) || 0,
+                    currency: row.currency || 'AED',
+                    type: row.type || 'Debit',
+                    merchant: row.merchant || '',
+                    card_last4: row.card_last_4 || '',
+                    category: row.category || 'Other',
+                    raw: row.raw_message || ''
+                };
+                console.log(`✅ Converted to:`, converted);
+                return converted;
+            });
             
             allTransactions = transactions;
+            console.log('💾 All transactions stored:', allTransactions.length);
             return transactions;
         } else {
             console.warn('⚠️ No data returned from Google Sheets');
+            console.warn('Response:', responseData);
             return [];
         }
     } catch (error) {

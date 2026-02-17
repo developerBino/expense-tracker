@@ -30,19 +30,48 @@ function doGet(e) {
     const sheet = initializeSheet();
     const data = sheet.getDataRange().getValues();
     
+    Logger.log("📊 Total rows in sheet: " + data.length);
+    Logger.log("📋 First row (headers): " + JSON.stringify(data[0]));
+    
+    if (data.length <= 1) {
+      Logger.log("⚠️ No data rows found (only headers)");
+      return ContentService.createTextOutput(JSON.stringify({
+        success: true,
+        data: [],
+        count: 0,
+        timestamp: new Date().toISOString()
+      }))
+        .setMimeType(ContentService.MimeType.JSON)
+        .setHeader("Access-Control-Allow-Origin", "*")
+        .setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE");
+    }
+    
     // Skip header row and convert to objects
     const headers = data[0];
+    Logger.log("📑 Headers: " + JSON.stringify(headers));
+    
     const transactions = [];
     
     for (let i = 1; i < data.length; i++) {
       const row = data[i];
+      
+      // Skip empty rows (check if first column is empty)
+      if (!row[0] || row[0] === "") {
+        Logger.log("⏭️  Skipping empty row " + (i + 1));
+        continue;
+      }
+      
+      Logger.log("📝 Processing row " + (i + 1) + ": " + JSON.stringify(row));
+      
       const transaction = {};
       
       headers.forEach((header, index) => {
-        transaction[header.toLowerCase().replace(/\s+/g, '_')] = row[index];
+        const key = header.toLowerCase().replace(/\s+/g, '_');
+        transaction[key] = row[index];
       });
       
       transactions.push(transaction);
+      Logger.log("✅ Row " + (i + 1) + " converted: " + JSON.stringify(transaction));
     }
     
     Logger.log("✅ Retrieved " + transactions.length + " transactions");
@@ -62,7 +91,9 @@ function doGet(e) {
     Logger.log("Stack: " + error.stack);
     return ContentService.createTextOutput(JSON.stringify({
       success: false,
-      error: error.toString()
+      error: error.toString(),
+      data: [],
+      count: 0
     }))
       .setMimeType(ContentService.MimeType.JSON);
   }

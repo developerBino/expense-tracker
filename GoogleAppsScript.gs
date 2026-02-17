@@ -21,6 +21,54 @@ const SHEET_NAME = "Transactions";
 // ==========================================
 
 /**
+ * Main function to handle GET requests (retrieve all transactions)
+ */
+function doGet(e) {
+  try {
+    Logger.log("📨 GET request received");
+    
+    const sheet = initializeSheet();
+    const data = sheet.getDataRange().getValues();
+    
+    // Skip header row and convert to objects
+    const headers = data[0];
+    const transactions = [];
+    
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      const transaction = {};
+      
+      headers.forEach((header, index) => {
+        transaction[header.toLowerCase().replace(/\s+/g, '_')] = row[index];
+      });
+      
+      transactions.push(transaction);
+    }
+    
+    Logger.log("✅ Retrieved " + transactions.length + " transactions");
+    
+    return ContentService.createTextOutput(JSON.stringify({
+      success: true,
+      data: transactions,
+      count: transactions.length,
+      timestamp: new Date().toISOString()
+    }))
+      .setMimeType(ContentService.MimeType.JSON)
+      .setHeader("Access-Control-Allow-Origin", "*")
+      .setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE");
+      
+  } catch (error) {
+    Logger.log("❌ Error in doGet: " + error.toString());
+    Logger.log("Stack: " + error.stack);
+    return ContentService.createTextOutput(JSON.stringify({
+      success: false,
+      error: error.toString()
+    }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+/**
  * Main function to handle POST requests from the web app
  */
 function doPost(e) {

@@ -19,6 +19,7 @@ let currentParsedData = null;
 let parsedHistory = []; // To prevent duplicates
 let currentUser = null; // Store current logged-in user
 let charts = {}; // Store chart instances
+let allTransactions = []; // Store transactions fetched from Google Sheets
 
 // ==========================================
 // Authentication & Page Navigation
@@ -93,7 +94,7 @@ function handleLogout() {
 /**
  * Check if user is logged in, restore session if available
  */
-function restoreSession() {
+async function restoreSession() {
     const savedUser = sessionStorage.getItem('currentUser');
     if (savedUser) {
         try {
@@ -101,8 +102,9 @@ function restoreSession() {
             document.getElementById('loggedInUser').textContent = currentUser.name;
             showAppPage();
             console.log('✅ Session restored for:', currentUser.name);
-            updateMonthlySummary();
-            updateCharts();
+            // Fetch fresh data from Google Sheets
+            await updateMonthlySummary();
+            await updateCharts();
         } catch (e) {
             console.error('Failed to restore session:', e);
             showLoginPage();
@@ -571,6 +573,63 @@ function parseSMSMessage(smsMessage) {
 // UI Functions
 // ==========================================
 
+// ==========================================
+// Fetch Data from Google Sheets
+// ==========================================
+
+/**
+ * Fetch all transactions from Google Sheets via API
+ */
+async function fetchTransactionsFromGoogleSheets() {
+    try {
+        console.log('🌐 Fetching transactions from Google Sheets...');
+        const response = await fetch(API_URL, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+
+        if (!response.ok) {
+            console.error('❌ HTTP Error:', response.statusText);
+            return [];
+        }
+
+        const responseText = await response.text();
+        const responseData = JSON.parse(responseText);
+
+        if (responseData.success && responseData.data) {
+            console.log('✅ Retrieved', responseData.count, 'transactions from Google Sheets');
+            // Convert from Google Sheets format to our format
+            const transactions = responseData.data.map(row => ({
+                timestamp: row.timestamp || '',
+                user: row.user || '',
+                date: row.date || '',
+                amount: parseFloat(row.amount) || 0,
+                currency: row.currency || 'AED',
+                type: row.type || 'Debit',
+                merchant: row.merchant || '',
+                card_last4: row.card_last_4 || '',
+                category: row.category || 'Other',
+                raw: row.raw_message || ''
+            }));
+            
+            allTransactions = transactions;
+            return transactions;
+        } else {
+            console.warn('⚠️ No data returned from Google Sheets');
+            return [];
+        }
+    } catch (error) {
+        console.error('❌ Error fetching from Google Sheets:', error);
+        return [];
+    }
+}
+
+// ==========================================
+// UI Functions
+// ==========================================
+
 /**
  * Show/hide preview section
  */
@@ -633,17 +692,17 @@ function showToast(message, type = 'success') {
 }
 
 /**
- * Update monthly summary
+ * Update monthly summary from Google Sheets data
  */
-function updateMonthlySummary() {
+async function updateMonthlySummary() {
     const today = new Date();
     const currentMonth = today.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
-    // Retrieve from localStorage if available
-    const transactions = JSON.parse(localStorage.getItem('transactions') || '[]');
-    console.log('📊 updateMonthlySummary - Total transactions in localStorage:', transactions.length);
+    // Fetch fresh data from Google Sheets
+    const transactions = await fetchTransactionsFromGoogleSheets();
+    console.log('📊 updateMonthlySummary - Total transactions from Google Sheets:', transactions.length);
 
-    // Filter by current month and year
+    // Filter by current year
     const monthTransactions = transactions.filter(t => {
         if (!t.date) {
             console.warn('⚠️ Transaction missing date:', t);
@@ -721,13 +780,13 @@ function toggleEditSection(show = true) {
 }
 
 /**
- * Update charts with transaction data
+ * Update charts with transaction data from Google Sheets
  */
-function updateCharts() {
-    const transactions = JSON.parse(localStorage.getItem('transactions') || '[]');
+async function updateCharts() {
+    const transactions = allTransactions; // Use already-fetched data
     
     if (transactions.length === 0) {
-        // No data to display
+        console.log('📊 No transactions to display in charts');
         return;
     }
 
@@ -873,23 +932,21 @@ document.addEventListener('DOMContentLoaded', function () {
     // Restore session or show login
     restoreSession();
 
-    // Load initial summary from localStorage
-    updateMonthlySummary();
-
     // Disable save button initially
     document.getElementById('saveBtn').disabled = true;
 
     /**
      * Handle Login Form Submit
      */
-    document.getElementById('loginForm').addEventListener('submit', function (e) {
+    document.getElementById('loginForm').addEventListener('submit', async function (e) {
         e.preventDefault();
         const code = document.getElementById('authCode').value;
         
         if (handleLogin(code)) {
             // Clear form
             document.getElementById('loginForm').reset();
-            updateCharts();
+            // Fetch data from Google Sheets after login
+            await updateCharts();
         }
     });
 
@@ -1044,18 +1101,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 console.log('⚠️ Please check Google Apps Script deployment');
             }
 
-            // Save to localStorage for local summary
-            const transactions = JSON.parse(localStorage.getItem('transactions') || '[]');
-            console.log('📦 Current localStorage transactions:', transactions.length);
-            transactions.push(dataToSave);
-            localStorage.setItem('transactions', JSON.stringify(transactions));
-            console.log('✅ Saved to localStorage. Total transactions:', transactions.length);
-
-            // Show different messages based on source
+            // Show message based on save result
             if (savedToGoogleSheets) {
                 showToast('✓ Saved to Google Sheets!', 'success');
+                console.log('✅ Transaction saved to Google Sheets');
             } else {
-                showToast('⚠️ Saved locally (Google Sheets offline)', 'info');
+                showToast('⚠️ Google Sheets unavailable - transaction not saved', 'warning');
+                console.log('⚠️ Transaction not saved to Google Sheets');
             }
 
             // Clear form and preview
@@ -1064,13 +1116,14 @@ document.addEventListener('DOMContentLoaded', function () {
             toggleEditSection(false);
             currentParsedData = null;
 
-            // Update summary and charts
-            console.log('📊 Updating monthly summary...');
-            updateMonthlySummary();
-            console.log('📈 Updating charts...');
-            updateCharts();
-            
-            console.log('✅ All updates complete');
+            // Refresh data from Google Sheets
+            if (savedToGoogleSheets) {
+                console.log('📊 Refreshing summary from Google Sheets...');
+                await updateMonthlySummary();
+                console.log('📈 Refreshing charts from Google Sheets...');
+                await updateCharts();
+                console.log('✅ All updates complete');
+            }
 
         } catch (error) {
             console.error('❌ Save error:', error);

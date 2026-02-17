@@ -1035,6 +1035,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 throw new Error('Invalid response from server');
             }
 
+            // Check if this was a local fallback or actual Google Sheets save
+            const savedToGoogleSheets = responseData.source !== 'local_cache';
+            if (savedToGoogleSheets) {
+                console.log('☁️ ✅ Data saved to GOOGLE SHEETS');
+            } else {
+                console.log('⚠️ ⚠️ Data saved to LOCAL CACHE ONLY (Google Sheets unavailable)');
+                console.log('⚠️ Please check Google Apps Script deployment');
+            }
+
             // Save to localStorage for local summary
             const transactions = JSON.parse(localStorage.getItem('transactions') || '[]');
             console.log('📦 Current localStorage transactions:', transactions.length);
@@ -1042,7 +1051,12 @@ document.addEventListener('DOMContentLoaded', function () {
             localStorage.setItem('transactions', JSON.stringify(transactions));
             console.log('✅ Saved to localStorage. Total transactions:', transactions.length);
 
-            showToast('✓ Saved successfully!', 'success');
+            // Show different messages based on source
+            if (savedToGoogleSheets) {
+                showToast('✓ Saved to Google Sheets!', 'success');
+            } else {
+                showToast('⚠️ Saved locally (Google Sheets offline)', 'info');
+            }
 
             // Clear form and preview
             document.getElementById('smsInput').value = '';

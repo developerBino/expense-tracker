@@ -142,6 +142,7 @@ function initializeSheet() {
       // Add headers
       const headers = [
         "Timestamp",
+        "User",
         "Date",
         "Amount",
         "Currency",
@@ -187,6 +188,7 @@ function insertTransaction(data) {
     const timestamp = new Date().toISOString();
     const rowData = [
       timestamp,
+      data.user || "Unknown",
       data.date,
       parseFloat(data.amount),
       data.currency,

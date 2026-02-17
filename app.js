@@ -5,12 +5,112 @@
 // Use the Vercel API endpoint (no CORS issues since it's same origin)
 const API_URL = "/api/submit";
 
+// Codes for authentication
+const AUTH_CODES = {
+    '5515': { name: 'Bino', id: 1 },
+    '2131': { name: 'Merlin', id: 2 }
+};
+
 // ==========================================
 // Data Structure
 // ==========================================
 
 let currentParsedData = null;
 let parsedHistory = []; // To prevent duplicates
+let currentUser = null; // Store current logged-in user
+let charts = {}; // Store chart instances
+
+// ==========================================
+// Authentication & Page Navigation
+// ==========================================
+
+/**
+ * Show login page and hide app page
+ */
+function showLoginPage() {
+    document.getElementById('loginPage').classList.add('active');
+    document.getElementById('appPage').classList.remove('active');
+    currentUser = null;
+    sessionStorage.removeItem('currentUser');
+}
+
+/**
+ * Show app page and hide login page
+ */
+function showAppPage() {
+    document.getElementById('loginPage').classList.remove('active');
+    document.getElementById('appPage').classList.add('active');
+}
+
+/**
+ * Handle login
+ */
+function handleLogin(code) {
+    if (!AUTH_CODES[code]) {
+        showError('Invalid code. Please try again.');
+        return false;
+    }
+
+    const userData = AUTH_CODES[code];
+    currentUser = {
+        code: code,
+        name: userData.name,
+        id: userData.id,
+        loginTime: new Date()
+    };
+
+    // Store in session storage
+    sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+
+    // Update UI
+    document.getElementById('loggedInUser').textContent = currentUser.name;
+
+    // Show app page
+    showAppPage();
+
+    hideError();
+    console.log('✅ User logged in:', currentUser);
+    return true;
+}
+
+/**
+ * Handle logout
+ */
+function handleLogout() {
+    currentUser = null;
+    sessionStorage.removeItem('currentUser');
+    
+    // Reset UI
+    document.getElementById('smsInput').value = '';
+    togglePreview(false);
+    toggleEditSection(false);
+    currentParsedData = null;
+    
+    showLoginPage();
+    showToast('Logged out successfully', 'info');
+}
+
+/**
+ * Check if user is logged in, restore session if available
+ */
+function restoreSession() {
+    const savedUser = sessionStorage.getItem('currentUser');
+    if (savedUser) {
+        try {
+            currentUser = JSON.parse(savedUser);
+            document.getElementById('loggedInUser').textContent = currentUser.name;
+            showAppPage();
+            console.log('✅ Session restored for:', currentUser.name);
+            updateMonthlySummary();
+            updateCharts();
+        } catch (e) {
+            console.error('Failed to restore session:', e);
+            showLoginPage();
+        }
+    } else {
+        showLoginPage();
+    }
+}
 
 // ==========================================
 // Category Detection Rules
@@ -594,7 +694,164 @@ function setSaveButtonLoading(isLoading) {
         button.innerHTML = '<span class="spinner"></span><span class="btn-text">Saving...</span>';
     } else {
         button.disabled = false;
-        button.innerHTML = '<span class="btn-text">Save to Google Sheets</span>';
+        button.innerHTML = '<span class="btn-text">💾 Save to Google Sheets</span>';
+    }
+}
+
+/**
+ * Show/hide edit section
+ */
+function toggleEditSection(show = true) {
+    const editSection = document.getElementById('editSection');
+    if (show) {
+        editSection.classList.remove('hidden');
+    } else {
+        editSection.classList.add('hidden');
+    }
+}
+
+/**
+ * Update charts with transaction data
+ */
+function updateCharts() {
+    const transactions = JSON.parse(localStorage.getItem('transactions') || '[]');
+    
+    if (transactions.length === 0) {
+        // No data to display
+        return;
+    }
+
+    // Data by category
+    const categoryData = {};
+    const typeData = { Debit: 0, Credit: 0 };
+    const dailyData = {};
+
+    transactions.forEach(t => {
+        const amount = parseFloat(t.amount) || 0;
+        const category = t.category || 'Other';
+        const type = t.type || 'Debit';
+        const date = t.date || new Date().toISOString().split('T')[0];
+
+        // Category totals
+        categoryData[category] = (categoryData[category] || 0) + amount;
+
+        // Type totals
+        if (type === 'Debit') {
+            typeData.Debit += amount;
+        } else {
+            typeData.Credit += amount;
+        }
+
+        // Daily totals
+        if (!dailyData[date]) {
+            dailyData[date] = 0;
+        }
+        if (type === 'Debit') {
+            dailyData[date] += amount;
+        }
+    });
+
+    // Category Chart
+    const categoryCtx = document.getElementById('categoryChart');
+    if (categoryCtx) {
+        if (charts.categoryChart) {
+            charts.categoryChart.destroy();
+        }
+
+        charts.categoryChart = new Chart(categoryCtx, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(categoryData),
+                datasets: [{
+                    data: Object.values(categoryData),
+                    backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'],
+                    borderColor: '#fff',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+
+    // Type Chart (Debit vs Credit)
+    const typeCtx = document.getElementById('typeChart');
+    if (typeCtx) {
+        if (charts.typeChart) {
+            charts.typeChart.destroy();
+        }
+
+        charts.typeChart = new Chart(typeCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Debit', 'Credit'],
+                datasets: [{
+                    label: 'Amount (AED)',
+                    data: [typeData.Debit, typeData.Credit],
+                    backgroundColor: ['#FF6384', '#4BC0C0'],
+                    borderColor: ['#FF6384', '#4BC0C0'],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
+    // Trend Chart (Daily spending)
+    const trendCtx = document.getElementById('trendChart');
+    if (trendCtx) {
+        if (charts.trendChart) {
+            charts.trendChart.destroy();
+        }
+
+        const sortedDates = Object.keys(dailyData).sort();
+        charts.trendChart = new Chart(trendCtx, {
+            type: 'line',
+            data: {
+                labels: sortedDates,
+                datasets: [{
+                    label: 'Daily Spending (AED)',
+                    data: sortedDates.map(date => dailyData[date]),
+                    borderColor: '#667eea',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#667eea',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top'
+                    }
+                }
+            }
+        });
     }
 }
 
@@ -603,11 +860,35 @@ function setSaveButtonLoading(isLoading) {
 // ==========================================
 
 document.addEventListener('DOMContentLoaded', function () {
+    // Restore session or show login
+    restoreSession();
+
     // Load initial summary from localStorage
     updateMonthlySummary();
 
     // Disable save button initially
     document.getElementById('saveBtn').disabled = true;
+
+    /**
+     * Handle Login Form Submit
+     */
+    document.getElementById('loginForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        const code = document.getElementById('authCode').value;
+        
+        if (handleLogin(code)) {
+            // Clear form
+            document.getElementById('loginForm').reset();
+            updateCharts();
+        }
+    });
+
+    /**
+     * Handle Logout Button
+     */
+    document.getElementById('logoutBtn').addEventListener('click', function () {
+        handleLogout();
+    });
 
     /**
      * Handle Parse button click
@@ -623,6 +904,7 @@ document.addEventListener('DOMContentLoaded', function () {
             console.log('✅ Parsed successfully:', currentParsedData);
             populatePreview(currentParsedData);
             togglePreview(true);
+            toggleEditSection(false);
             document.getElementById('saveBtn').disabled = false;
         } catch (error) {
             console.error('❌ Parsing error:', error.message);
@@ -630,6 +912,52 @@ document.addEventListener('DOMContentLoaded', function () {
             togglePreview(false);
             currentParsedData = null;
         }
+    });
+
+    /**
+     * Handle Edit button click
+     */
+    document.getElementById('editBtn').addEventListener('click', function () {
+        if (currentParsedData) {
+            // Populate edit form with current data
+            document.getElementById('editDate').value = currentParsedData.date;
+            document.getElementById('editAmount').value = currentParsedData.amount;
+            document.getElementById('editCurrency').value = currentParsedData.currency;
+            document.getElementById('editType').value = currentParsedData.type;
+            document.getElementById('editMerchant').value = currentParsedData.merchant;
+            document.getElementById('editCard').value = currentParsedData.card_last4;
+            document.getElementById('editCategory').value = currentParsedData.category;
+            
+            toggleEditSection(true);
+        }
+    });
+
+    /**
+     * Handle Save Edit button click
+     */
+    document.getElementById('saveEditBtn').addEventListener('click', function () {
+        if (currentParsedData) {
+            // Update parsed data from form
+            currentParsedData.date = document.getElementById('editDate').value;
+            currentParsedData.amount = parseFloat(document.getElementById('editAmount').value);
+            currentParsedData.currency = document.getElementById('editCurrency').value;
+            currentParsedData.type = document.getElementById('editType').value;
+            currentParsedData.merchant = document.getElementById('editMerchant').value;
+            currentParsedData.card_last4 = document.getElementById('editCard').value;
+            currentParsedData.category = document.getElementById('editCategory').value;
+            
+            // Update preview
+            populatePreview(currentParsedData);
+            toggleEditSection(false);
+            showToast('Details updated', 'success');
+        }
+    });
+
+    /**
+     * Handle Cancel Edit button click
+     */
+    document.getElementById('cancelEditBtn').addEventListener('click', function () {
+        toggleEditSection(false);
     });
 
     /**
@@ -642,6 +970,11 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
+        if (!currentUser) {
+            showError('Please login first');
+            return;
+        }
+
         if (!API_URL || API_URL === "PASTE_GOOGLE_SCRIPT_URL_HERE") {
             showError('Google Apps Script URL not configured');
             console.error('❌ API_URL not configured:', API_URL);
@@ -649,7 +982,14 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         setSaveButtonLoading(true);
-        console.log('📤 Sending to Google Sheets:', currentParsedData);
+        
+        // Add user name to data
+        const dataToSave = {
+            ...currentParsedData,
+            user: currentUser.name
+        };
+
+        console.log('📤 Sending to Google Sheets:', dataToSave);
         console.log('📡 API URL:', API_URL);
 
         try {
@@ -658,7 +998,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(currentParsedData),
+                body: JSON.stringify(dataToSave),
             });
 
             console.log('📊 Response Status:', response.status);
@@ -675,7 +1015,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // Save to localStorage for local summary
             const transactions = JSON.parse(localStorage.getItem('transactions') || '[]');
-            transactions.push(currentParsedData);
+            transactions.push(dataToSave);
             localStorage.setItem('transactions', JSON.stringify(transactions));
 
             showToast('✓ Saved successfully!', 'success');
@@ -683,10 +1023,12 @@ document.addEventListener('DOMContentLoaded', function () {
             // Clear form and preview
             document.getElementById('smsInput').value = '';
             togglePreview(false);
+            toggleEditSection(false);
             currentParsedData = null;
 
-            // Update summary
+            // Update summary and charts
             updateMonthlySummary();
+            updateCharts();
 
         } catch (error) {
             console.error('❌ Save error:', error);
@@ -700,4 +1042,5 @@ document.addEventListener('DOMContentLoaded', function () {
      * Clear error on input focus
      */
     document.getElementById('smsInput').addEventListener('focus', hideError);
+    document.getElementById('authCode').addEventListener('focus', hideError);
 });

@@ -5,103 +5,227 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SMS Expense Tracker</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <div class="container">
-        <!-- Header -->
-        <header class="header">
-            <h1 class="title">SMS Expense Tracker</h1>
-            <p class="subtitle">Paste your bank SMS to track expenses</p>
-        </header>
+    <!-- Login/Auth Page -->
+    <div id="loginPage" class="page active">
+        <div class="auth-container">
+            <div class="auth-card">
+                <h1 class="auth-title">Expense Tracker</h1>
+                <p class="auth-subtitle">Track your daily expenses together</p>
+                
+                <form id="loginForm" class="auth-form">
+                    <div class="form-group">
+                        <label for="authCode" class="label">Enter Your Code</label>
+                        <input 
+                            type="password" 
+                            id="authCode" 
+                            class="input" 
+                            placeholder="Enter your 4-digit code"
+                            maxlength="4"
+                            required
+                        >
+                    </div>
 
-        <!-- Input Section -->
-        <section class="card input-section">
-            <div class="form-group">
-                <label for="smsInput" class="label">Bank SMS Message</label>
-                <textarea
-                    id="smsInput"
-                    class="textarea"
-                    placeholder="Paste your UAE bank SMS here... e.g., 'AED 45.75 spent at Carrefour on 15-02-2026 using Debit Card ending 1234'"
-                    rows="4"
-                ></textarea>
-            </div>
+                    <button type="submit" class="btn btn-primary btn-full">
+                        <span class="btn-text">Login</span>
+                    </button>
+                </form>
 
-            <button id="parseBtn" class="btn btn-primary">
-                <span class="btn-text">Parse Message</span>
-            </button>
-        </section>
-
-        <!-- Preview Section -->
-        <section id="previewSection" class="card preview-section hidden">
-            <h2 class="section-title">Preview</h2>
-
-            <div class="preview-grid">
-                <div class="preview-item">
-                    <span class="preview-label">Date</span>
-                    <span id="previewDate" class="preview-value">-</span>
-                </div>
-                <div class="preview-item">
-                    <span class="preview-label">Amount</span>
-                    <span id="previewAmount" class="preview-value">-</span>
-                </div>
-                <div class="preview-item">
-                    <span class="preview-label">Currency</span>
-                    <span id="previewCurrency" class="preview-value">-</span>
-                </div>
-                <div class="preview-item">
-                    <span class="preview-label">Type</span>
-                    <span id="previewType" class="preview-value">-</span>
-                </div>
-                <div class="preview-item">
-                    <span class="preview-label">Merchant</span>
-                    <span id="previewMerchant" class="preview-value">-</span>
-                </div>
-                <div class="preview-item">
-                    <span class="preview-label">Card Last 4</span>
-                    <span id="previewCard" class="preview-value">-</span>
-                </div>
-                <div class="preview-item">
-                    <span class="preview-label">Category</span>
-                    <span id="previewCategory" class="preview-value">-</span>
+                <div class="auth-info">
+                    <p><strong>5515:</strong> Bino</p>
+                    <p><strong>2131:</strong> Merlin</p>
                 </div>
             </div>
+        </div>
+    </div>
 
-            <div class="raw-message">
-                <span class="raw-label">Raw Message</span>
-                <p id="previewRaw" class="raw-text"></p>
-            </div>
-
-            <button id="saveBtn" class="btn btn-success">
-                <span class="btn-text">Save to Google Sheets</span>
-            </button>
-        </section>
-
-        <!-- Monthly Summary Section -->
-        <section class="card summary-section">
-            <h2 class="section-title">Monthly Summary</h2>
-
-            <div class="summary-grid">
-                <div class="summary-item">
-                    <span class="summary-label">Total Debit</span>
-                    <span id="totalDebit" class="summary-value">AED 0.00</span>
+    <!-- Main App Page -->
+    <div id="appPage" class="page">
+        <div class="container">
+            <!-- Header with User -->
+            <header class="header">
+                <div class="header-top">
+                    <div>
+                        <h1 class="title">SMS Expense Tracker</h1>
+                        <p class="subtitle">Logged in as: <strong id="loggedInUser">-</strong></p>
+                    </div>
+                    <button id="logoutBtn" class="btn btn-small btn-outline">Logout</button>
                 </div>
-                <div class="summary-item">
-                    <span class="summary-label">Total Credit</span>
-                    <span id="totalCredit" class="summary-value">AED 0.00</span>
-                </div>
-                <div class="summary-item">
-                    <span class="summary-label">Net Total</span>
-                    <span id="netTotal" class="summary-value">AED 0.00</span>
-                </div>
-                <div class="summary-item">
-                    <span class="summary-label">Transactions</span>
-                    <span id="transactionCount" class="summary-value">0</span>
-                </div>
-            </div>
-        </section>
+            </header>
 
-        <!-- Error Message -->
-        <div id="errorMessage" class="error-message hidden"></div>
+            <!-- Input Section -->
+            <section class="card input-section">
+                <div class="form-group">
+                    <label for="smsInput" class="label">Bank SMS Message</label>
+                    <textarea
+                        id="smsInput"
+                        class="textarea"
+                        placeholder="Paste your UAE bank SMS here..."
+                        rows="4"
+                    ></textarea>
+                </div>
+
+                <button id="parseBtn" class="btn btn-primary">
+                    <span class="btn-text">Parse Message</span>
+                </button>
+            </section>
+
+            <!-- Edit Section (Hidden by default) -->
+            <section id="editSection" class="card edit-section hidden">
+                <h2 class="section-title">Edit Details</h2>
+
+                <div class="edit-grid">
+                    <div class="form-group">
+                        <label for="editDate" class="label">Date</label>
+                        <input type="date" id="editDate" class="input">
+                    </div>
+                    <div class="form-group">
+                        <label for="editAmount" class="label">Amount</label>
+                        <input type="number" id="editAmount" class="input" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label for="editCurrency" class="label">Currency</label>
+                        <input type="text" id="editCurrency" class="input">
+                    </div>
+                    <div class="form-group">
+                        <label for="editType" class="label">Type</label>
+                        <select id="editType" class="input">
+                            <option value="Debit">Debit</option>
+                            <option value="Credit">Credit</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="editMerchant" class="label">Merchant</label>
+                        <input type="text" id="editMerchant" class="input">
+                    </div>
+                    <div class="form-group">
+                        <label for="editCard" class="label">Card Last 4</label>
+                        <input type="text" id="editCard" class="input" maxlength="4">
+                    </div>
+                    <div class="form-group">
+                        <label for="editCategory" class="label">Category</label>
+                        <select id="editCategory" class="input">
+                            <option value="Groceries">Groceries</option>
+                            <option value="Shopping">Shopping</option>
+                            <option value="Fuel">Fuel</option>
+                            <option value="Food">Food</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="edit-actions">
+                    <button id="saveEditBtn" class="btn btn-success">
+                        <span class="btn-text">Save Changes</span>
+                    </button>
+                    <button id="cancelEditBtn" class="btn btn-secondary">
+                        <span class="btn-text">Cancel</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Preview Section -->
+            <section id="previewSection" class="card preview-section hidden">
+                <h2 class="section-title">Preview</h2>
+
+                <div class="preview-grid">
+                    <div class="preview-item">
+                        <span class="preview-label">Date</span>
+                        <span id="previewDate" class="preview-value">-</span>
+                    </div>
+                    <div class="preview-item">
+                        <span class="preview-label">Amount</span>
+                        <span id="previewAmount" class="preview-value">-</span>
+                    </div>
+                    <div class="preview-item">
+                        <span class="preview-label">Currency</span>
+                        <span id="previewCurrency" class="preview-value">-</span>
+                    </div>
+                    <div class="preview-item">
+                        <span class="preview-label">Type</span>
+                        <span id="previewType" class="preview-value">-</span>
+                    </div>
+                    <div class="preview-item">
+                        <span class="preview-label">Merchant</span>
+                        <span id="previewMerchant" class="preview-value">-</span>
+                    </div>
+                    <div class="preview-item">
+                        <span class="preview-label">Card Last 4</span>
+                        <span id="previewCard" class="preview-value">-</span>
+                    </div>
+                    <div class="preview-item">
+                        <span class="preview-label">Category</span>
+                        <span id="previewCategory" class="preview-value">-</span>
+                    </div>
+                </div>
+
+                <div class="raw-message">
+                    <span class="raw-label">Raw Message</span>
+                    <p id="previewRaw" class="raw-text"></p>
+                </div>
+
+                <div class="preview-actions">
+                    <button id="editBtn" class="btn btn-secondary">
+                        <span class="btn-text">✎ Edit Details</span>
+                    </button>
+                    <button id="saveBtn" class="btn btn-success">
+                        <span class="btn-text">💾 Save to Google Sheets</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Monthly Summary Section -->
+            <section class="card summary-section">
+                <h2 class="section-title">Monthly Summary</h2>
+
+                <div class="summary-grid">
+                    <div class="summary-item">
+                        <span class="summary-label">Total Debit</span>
+                        <span id="totalDebit" class="summary-value">AED 0.00</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Total Credit</span>
+                        <span id="totalCredit" class="summary-value">AED 0.00</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Net Total</span>
+                        <span id="netTotal" class="summary-value">AED 0.00</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Transactions</span>
+                        <span id="transactionCount" class="summary-value">0</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Charts Section -->
+            <section class="card charts-section">
+                <h2 class="section-title">Analytics</h2>
+
+                <div class="charts-grid">
+                    <div class="chart-container">
+                        <h3 class="chart-title">Spending by Category</h3>
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <h3 class="chart-title">Debit vs Credit</h3>
+                        <canvas id="typeChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-row">
+                    <div class="chart-container full-width">
+                        <h3 class="chart-title">Daily Spending Trend</h3>
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Error Message -->
+            <div id="errorMessage" class="error-message hidden"></div>
+        </div>
     </div>
 
     <!-- Toast Notification -->

@@ -5,6 +5,10 @@
 // Use the Vercel API endpoint (no CORS issues since it's same origin)
 const API_URL = "/api/submit";
 
+// Gemini API Configuration
+const GEMINI_API_KEY = 'AIzaSyB2EaALixtH4JVmF-Yk-ex9N9BbuE5tfIQ';
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+
 // ==========================================
 // Data Structure
 // ==========================================
@@ -230,15 +234,117 @@ function detectCategory(merchant) {
 }
 
 // ==========================================
+// Gemini API Integration
+// ==========================================
+
+/**
+ * Use Gemini AI to extract transaction data from SMS
+ * @param {string} smsMessage
+ * @returns {Promise<object>} Parsed transaction data
+ */
+async function extractDataWithGemini(smsMessage) {
+    const prompt = `Extract financial transaction data from this UAE bank SMS message and return ONLY valid JSON (no markdown, no extra text).
+
+SMS Message:
+"${smsMessage}"
+
+Return JSON in this exact format (all fields required, use null for missing values):
+{
+  "date": "YYYY-MM-DD format",
+  "amount": number (just the amount, no currency),
+  "currency": "AED or other currency code",
+  "type": "Credit or Debit",
+  "merchant": "merchant name or bank name",
+  "card_last4": "last 4 digits of card or null",
+  "category": "Groceries, Shopping, Fuel, Food, or Other",
+  "raw": "${smsMessage}"
+}
+
+Rules:
+- For date: Convert any date format to YYYY-MM-DD. If only time is given, use today's date.
+- For amount: Extract as a number only (no currency symbols)
+- For currency: Default to "AED" if not specified
+- For type: "Credit" if money received/credited, "Debit" if spent/purchased
+- For merchant: Extract the store/bank/service name
+- For card_last4: Extract last 4 digits if mentioned, otherwise null
+- For category: Based on merchant (Carrefour/Lulu=Groceries, Amazon/Noon=Shopping, ADNOC/ENOC=Fuel, Talabat/Deliveroo=Food)
+- Return ONLY the JSON, nothing else`;
+
+    try {
+        console.log('🤖 Calling Gemini API...');
+
+        const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                contents: [{
+                    parts: [{
+                        text: prompt
+                    }]
+                }]
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`Gemini API error: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log('📊 Gemini response:', data);
+
+        // Extract the text response
+        const generatedText = data.candidates[0].content.parts[0].text;
+        console.log('📝 Generated text:', generatedText);
+
+        // Parse the JSON from Gemini's response
+        let parsedData;
+        try {
+            // Remove markdown code blocks if present
+            let jsonString = generatedText.trim();
+            if (jsonString.startsWith('```json')) {
+                jsonString = jsonString.replace(/^```json\n/, '').replace(/\n```$/, '');
+            } else if (jsonString.startsWith('```')) {
+                jsonString = jsonString.replace(/^```\n/, '').replace(/\n```$/, '');
+            }
+
+            parsedData = JSON.parse(jsonString);
+        } catch (parseError) {
+            console.error('❌ Failed to parse Gemini JSON:', generatedText);
+            throw new Error('Failed to parse extracted data: ' + parseError.message);
+        }
+
+        // Validate and normalize the data
+        if (!parsedData.date || !parsedData.amount || !parsedData.currency || !parsedData.type) {
+            throw new Error('Gemini extraction missing required fields');
+        }
+
+        // Ensure amount is a number
+        parsedData.amount = parseFloat(parsedData.amount);
+        if (isNaN(parsedData.amount)) {
+            throw new Error('Invalid amount extracted');
+        }
+
+        console.log('✅ Gemini extraction successful:', parsedData);
+        return parsedData;
+
+    } catch (error) {
+        console.error('❌ Gemini extraction error:', error.message);
+        throw error;
+    }
+}
+
+// ==========================================
 // Main Parser Function
 // ==========================================
 
 /**
- * Parse SMS message and extract structured data
+ * Parse SMS message and extract structured data using Gemini
  * @param {string} smsMessage
- * @returns {object} Parsed transaction data
+ * @returns {Promise<object>} Parsed transaction data
  */
-function parseSMSMessage(smsMessage) {
+async function parseSMSMessage(smsMessage) {
     const cleanMessage = smsMessage.trim();
 
     if (!cleanMessage) {
@@ -250,37 +356,24 @@ function parseSMSMessage(smsMessage) {
         throw new Error('This message has already been parsed');
     }
 
-    const { amount, currency } = parseAmountAndCurrency(cleanMessage);
-    const date = parseDate(cleanMessage);
-    const type = detectTransactionType(cleanMessage);
-    const merchant = extractMerchant(cleanMessage);
-    const card_last4 = extractCardLast4(cleanMessage);
-    const category = detectCategory(merchant);
+    try {
+        // Use Gemini for extraction
+        const parsedData = await extractDataWithGemini(cleanMessage);
 
-    if (amount === 0) {
-        throw new Error('Could not extract amount from message');
+        // Ensure all required fields exist
+        parsedData.card_last4 = parsedData.card_last4 || '';
+        parsedData.category = parsedData.category || 'Other';
+        parsedData.raw = cleanMessage;
+
+        // Add to history to prevent duplicates
+        parsedHistory.push(cleanMessage);
+
+        return parsedData;
+
+    } catch (error) {
+        console.error('❌ SMS parsing error:', error.message);
+        throw error;
     }
-
-    const parsedData = {
-        date: date,
-        amount: amount,
-        currency: currency,
-        type: type,
-        merchant: merchant || 'Unknown',
-        card_last4: card_last4,
-        category: category,
-        raw: cleanMessage,
-    };
-
-    // Validate critical fields
-    if (!parsedData.date) {
-        throw new Error('Could not extract date from message');
-    }
-
-    // Add to history to prevent duplicates
-    parsedHistory.push(cleanMessage);
-
-    return parsedData;
 }
 
 // ==========================================
@@ -428,14 +521,20 @@ document.addEventListener('DOMContentLoaded', function () {
     /**
      * Handle Parse button click
      */
-    document.getElementById('parseBtn').addEventListener('click', function () {
+    document.getElementById('parseBtn').addEventListener('click', async function () {
         hideError();
         const smsInput = document.getElementById('smsInput').value;
 
         console.log('🔍 Parsing SMS:', smsInput);
 
+        // Show loading state
+        const parseBtn = document.getElementById('parseBtn');
+        const originalText = parseBtn.innerHTML;
+        parseBtn.disabled = true;
+        parseBtn.innerHTML = '<span class="spinner"></span><span class="btn-text">Parsing with Gemini...</span>';
+
         try {
-            currentParsedData = parseSMSMessage(smsInput);
+            currentParsedData = await parseSMSMessage(smsInput);
             console.log('✅ Parsed successfully:', currentParsedData);
             populatePreview(currentParsedData);
             togglePreview(true);
@@ -445,6 +544,10 @@ document.addEventListener('DOMContentLoaded', function () {
             showError(error.message);
             togglePreview(false);
             currentParsedData = null;
+        } finally {
+            // Restore button state
+            parseBtn.disabled = false;
+            parseBtn.innerHTML = originalText;
         }
     });
 

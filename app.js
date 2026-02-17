@@ -5,10 +5,6 @@
 // Use the Vercel API endpoint (no CORS issues since it's same origin)
 const API_URL = "/api/submit";
 
-// Gemini API Configuration
-const GEMINI_API_KEY = 'AIzaSyB2EaALixtH4JVmF-Yk-ex9N9BbuE5tfIQ';
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
-
 // ==========================================
 // Data Structure
 // ==========================================
@@ -234,105 +230,195 @@ function detectCategory(merchant) {
 }
 
 // ==========================================
-// Gemini API Integration
+// Advanced SMS Parser
 // ==========================================
 
 /**
- * Use Gemini AI to extract transaction data from SMS
+ * Extract transaction data from ADCB bank SMS messages
+ * Handles multiple SMS formats: debit card, credit card, transfers, ATM withdrawals, credits
  * @param {string} smsMessage
- * @returns {Promise<object>} Parsed transaction data
+ * @returns {object} Parsed transaction data
  */
-async function extractDataWithGemini(smsMessage) {
-    const prompt = `Extract financial transaction data from this UAE bank SMS message and return ONLY valid JSON (no markdown, no extra text).
+function extractSMSData(smsMessage) {
+    console.log('🔍 Parsing SMS:', smsMessage);
 
-SMS Message:
-"${smsMessage}"
+    const message = smsMessage.trim();
+    let date = '';
+    let amount = 0;
+    let type = 'Debit'; // Default to Debit
+    let merchant = '';
+    let cardLast4 = '';
 
-Return JSON in this exact format (all fields required, use null for missing values):
-{
-  "date": "YYYY-MM-DD format",
-  "amount": number (just the amount, no currency),
-  "currency": "AED or other currency code",
-  "type": "Credit or Debit",
-  "merchant": "merchant name or bank name",
-  "card_last4": "last 4 digits of card or null",
-  "category": "Groceries, Shopping, Fuel, Food, or Other",
-  "raw": "${smsMessage}"
-}
+    // ===== PATTERN 1: Debit Card Transaction =====
+    // "Your debit card XXX9098 linked to acc. XXX910001 was used for AED15.75 on Feb 16 2026  8:52PM at OOTTUPURA RESTA,AE"
+    if (message.includes('debit card') && message.includes('was used for')) {
+        console.log('  📌 Detected: Debit Card Transaction');
+        
+        type = 'Debit';
 
-Rules:
-- For date: Convert any date format to YYYY-MM-DD. If only time is given, use today's date.
-- For amount: Extract as a number only (no currency symbols)
-- For currency: Default to "AED" if not specified
-- For type: "Credit" if money received/credited, "Debit" if spent/purchased
-- For merchant: Extract the store/bank/service name
-- For card_last4: Extract last 4 digits if mentioned, otherwise null
-- For category: Based on merchant (Carrefour/Lulu=Groceries, Amazon/Noon=Shopping, ADNOC/ENOC=Fuel, Talabat/Deliveroo=Food)
-- Return ONLY the JSON, nothing else`;
-
-    try {
-        console.log('🤖 Calling Gemini API...');
-
-        const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                contents: [{
-                    parts: [{
-                        text: prompt
-                    }]
-                }]
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error(`Gemini API error: ${response.statusText}`);
+        // Extract card last 4
+        const cardMatch = message.match(/debit card\s+XXX(\d{4})/i);
+        if (cardMatch) {
+            cardLast4 = cardMatch[1];
         }
 
-        const data = await response.json();
-        console.log('📊 Gemini response:', data);
-
-        // Extract the text response
-        const generatedText = data.candidates[0].content.parts[0].text;
-        console.log('📝 Generated text:', generatedText);
-
-        // Parse the JSON from Gemini's response
-        let parsedData;
-        try {
-            // Remove markdown code blocks if present
-            let jsonString = generatedText.trim();
-            if (jsonString.startsWith('```json')) {
-                jsonString = jsonString.replace(/^```json\n/, '').replace(/\n```$/, '');
-            } else if (jsonString.startsWith('```')) {
-                jsonString = jsonString.replace(/^```\n/, '').replace(/\n```$/, '');
-            }
-
-            parsedData = JSON.parse(jsonString);
-        } catch (parseError) {
-            console.error('❌ Failed to parse Gemini JSON:', generatedText);
-            throw new Error('Failed to parse extracted data: ' + parseError.message);
+        // Extract amount - look for "AED" or just numbers
+        const amountMatch = message.match(/was used for\s+AED\s*([\d.]+)/i);
+        if (amountMatch) {
+            amount = parseFloat(amountMatch[1]);
         }
 
-        // Validate and normalize the data
-        if (!parsedData.date || !parsedData.amount || !parsedData.currency || !parsedData.type) {
-            throw new Error('Gemini extraction missing required fields');
+        // Extract date
+        const dateMatch = message.match(/on\s+(.*?)\s+at/i);
+        if (dateMatch) {
+            date = parseDate(dateMatch[1]);
         }
 
-        // Ensure amount is a number
-        parsedData.amount = parseFloat(parsedData.amount);
-        if (isNaN(parsedData.amount)) {
-            throw new Error('Invalid amount extracted');
+        // Extract merchant - text between "at" and comma or end
+        const merchantMatch = message.match(/at\s+([^,]+)/i);
+        if (merchantMatch) {
+            merchant = merchantMatch[1].trim();
         }
-
-        console.log('✅ Gemini extraction successful:', parsedData);
-        return parsedData;
-
-    } catch (error) {
-        console.error('❌ Gemini extraction error:', error.message);
-        throw error;
     }
+    // ===== PATTERN 2: Credit Card Transaction =====
+    // "Your Cr.Card XXX5186 was used for AED10.00 on 17/02/2026 17:27:35 at NEW GRILL LAND REST,DUBAI-AE"
+    else if ((message.includes('Cr.Card') || message.includes('credit card')) && message.includes('was used for')) {
+        console.log('  📌 Detected: Credit Card Transaction');
+        
+        type = 'Debit'; // Card spending is a debit
+
+        // Extract card last 4
+        const cardMatch = message.match(/(?:Cr\.Card\s+XXX|credit card.*?XXX)(\d{4})/i);
+        if (cardMatch) {
+            cardLast4 = cardMatch[1];
+        }
+
+        // Extract amount
+        const amountMatch = message.match(/was used for\s+AED\s*([\d.]+)/i);
+        if (amountMatch) {
+            amount = parseFloat(amountMatch[1]);
+        }
+
+        // Extract date - handles "17/02/2026 17:27:35" format
+        const dateMatch = message.match(/on\s+(\d{1,2}\/\d{1,2}\/\d{4})/);
+        if (dateMatch) {
+            date = parseDate(dateMatch[1]);
+        }
+
+        // Extract merchant
+        const merchantMatch = message.match(/at\s+([^,]+)/i);
+        if (merchantMatch) {
+            merchant = merchantMatch[1].trim();
+        }
+    }
+    // ===== PATTERN 3: Credit/Deposit Transaction =====
+    // "A Cr. transaction of AED 2100.00 on your account no. XXX910001 was successful"
+    else if (message.includes('Cr. transaction') || message.toLowerCase().includes('credit') && message.includes('successful')) {
+        console.log('  📌 Detected: Credit Transaction');
+        
+        type = 'Credit';
+
+        // Extract amount
+        const amountMatch = message.match(/of\s+AED\s*([\d.]+)/i);
+        if (amountMatch) {
+            amount = parseFloat(amountMatch[1]);
+        }
+
+        // For credit transactions without explicit date, we need to find it or use today
+        const dateMatch = message.match(/on\s+([^.]+?)\s+(was|at)/i) || message.match(/on\s+([^.]+?)(?:\.|$)/i);
+        if (dateMatch) {
+            date = parseDate(dateMatch[1]);
+        }
+
+        // No merchant typically for direct credits
+        merchant = 'Bank Credit';
+    }
+    // ===== PATTERN 4: Transfer via Mobile/Internet Banking =====
+    // "AED2067.00 transferred via ADCB Personal Internet Banking / Mobile App from acc. no. XXX910001 on Feb 16 2026 10:53PM"
+    else if (message.includes('transferred') || message.includes('transfer')) {
+        console.log('  📌 Detected: Transfer');
+        
+        type = message.toLowerCase().includes('transfer out') ? 'Debit' : (
+            message.toLowerCase().includes('transferred via') ? 'Debit' : 'Credit'
+        );
+
+        // Extract amount - at the beginning
+        const amountMatch = message.match(/^AED\s*([\d.]+)|of\s+AED\s*([\d.]+)/i);
+        if (amountMatch) {
+            amount = parseFloat(amountMatch[1] || amountMatch[2]);
+        }
+
+        // Extract date
+        const dateMatch = message.match(/on\s+(.*?)(?:\.|$)/i);
+        if (dateMatch) {
+            date = parseDate(dateMatch[1]);
+        }
+
+        merchant = 'Bank Transfer';
+    }
+    // ===== PATTERN 5: ATM Withdrawal =====
+    // "AED200.00 withdrawn from acc. XXX910001 on Feb  5 2026 12:57PM at ATM-EMIRATES BANK INTL    DUB"
+    else if (message.includes('withdrawn') && message.includes('ATM')) {
+        console.log('  📌 Detected: ATM Withdrawal');
+        
+        type = 'Debit';
+
+        // Extract amount
+        const amountMatch = message.match(/^AED\s*([\d.]+)/i);
+        if (amountMatch) {
+            amount = parseFloat(amountMatch[1]);
+        }
+
+        // Extract date
+        const dateMatch = message.match(/on\s+(.*?)\s+at/i);
+        if (dateMatch) {
+            date = parseDate(dateMatch[1]);
+        }
+
+        merchant = 'ATM Withdrawal';
+    }
+    // ===== FALLBACK: Generic Amount and Date Extraction =====
+    else {
+        console.log('  📌 Detected: Generic Transaction (fallback)');
+        
+        // Try to extract amount
+        const amountMatch = message.match(/AED\s+([\d.]+)|[\d.]+\s+AED/i);
+        if (amountMatch) {
+            amount = parseFloat(amountMatch[1] || amountMatch[0].match(/[\d.]+/)[0]);
+        }
+
+        // Try to extract date
+        const dateMatch = message.match(/(?:on|date)\s+(.*?)(?:at|$)/i);
+        if (dateMatch) {
+            date = parseDate(dateMatch[1]);
+        }
+
+        merchant = 'Transaction';
+    }
+
+    // Fallback to today if no date found
+    if (!date) {
+        const today = new Date();
+        date = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        console.log('  ⚠️  No date found, using today:', date);
+    }
+
+    // Clean merchant name
+    merchant = merchant.replace(/,AE$/i, '').replace(/[,-]+$/, '').trim();
+
+    const result = {
+        date,
+        amount,
+        currency: 'AED',
+        type,
+        merchant,
+        card_last4: cardLast4,
+        category: detectCategory(merchant),
+        raw: message
+    };
+
+    console.log('  ✅ Extraction result:', result);
+    return result;
 }
 
 // ==========================================
@@ -340,11 +426,11 @@ Rules:
 // ==========================================
 
 /**
- * Parse SMS message and extract structured data using Gemini
+ * Parse SMS message and extract structured data
  * @param {string} smsMessage
- * @returns {Promise<object>} Parsed transaction data
+ * @returns {object} Parsed transaction data
  */
-async function parseSMSMessage(smsMessage) {
+function parseSMSMessage(smsMessage) {
     const cleanMessage = smsMessage.trim();
 
     if (!cleanMessage) {
@@ -357,17 +443,22 @@ async function parseSMSMessage(smsMessage) {
     }
 
     try {
-        // Use Gemini for extraction
-        const parsedData = await extractDataWithGemini(cleanMessage);
+        // Extract data using JavaScript parser
+        const parsedData = extractSMSData(cleanMessage);
 
         // Ensure all required fields exist
         parsedData.card_last4 = parsedData.card_last4 || '';
         parsedData.category = parsedData.category || 'Other';
-        parsedData.raw = cleanMessage;
+
+        // Validate required fields
+        if (!parsedData.date || !parsedData.amount || !parsedData.currency || !parsedData.type) {
+            throw new Error('Could not extract all required fields from SMS');
+        }
 
         // Add to history to prevent duplicates
         parsedHistory.push(cleanMessage);
 
+        console.log('✅ SMS parsed successfully:', parsedData);
         return parsedData;
 
     } catch (error) {
@@ -521,20 +612,14 @@ document.addEventListener('DOMContentLoaded', function () {
     /**
      * Handle Parse button click
      */
-    document.getElementById('parseBtn').addEventListener('click', async function () {
+    document.getElementById('parseBtn').addEventListener('click', function () {
         hideError();
         const smsInput = document.getElementById('smsInput').value;
 
         console.log('🔍 Parsing SMS:', smsInput);
 
-        // Show loading state
-        const parseBtn = document.getElementById('parseBtn');
-        const originalText = parseBtn.innerHTML;
-        parseBtn.disabled = true;
-        parseBtn.innerHTML = '<span class="spinner"></span><span class="btn-text">Parsing with Gemini...</span>';
-
         try {
-            currentParsedData = await parseSMSMessage(smsInput);
+            currentParsedData = parseSMSMessage(smsInput);
             console.log('✅ Parsed successfully:', currentParsedData);
             populatePreview(currentParsedData);
             togglePreview(true);
@@ -544,10 +629,6 @@ document.addEventListener('DOMContentLoaded', function () {
             showError(error.message);
             togglePreview(false);
             currentParsedData = null;
-        } finally {
-            // Restore button state
-            parseBtn.disabled = false;
-            parseBtn.innerHTML = originalText;
         }
     });
 

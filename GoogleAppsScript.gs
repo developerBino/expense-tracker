@@ -31,6 +31,22 @@ function doGet(e) {
     const data = sheet.getDataRange().getValues();
     
     Logger.log("📊 Total rows in sheet: " + data.length);
+    Logger.log("� Total columns: " + (data[0] ? data[0].length : 0));
+    
+    if (data.length === 0) {
+      Logger.log("⚠️ Sheet is completely empty");
+      return ContentService.createTextOutput(JSON.stringify({
+        success: true,
+        data: [],
+        count: 0,
+        timestamp: new Date().toISOString()
+      }))
+        .setMimeType(ContentService.MimeType.JSON)
+        .setHeader("Access-Control-Allow-Origin", "*")
+        .setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE");
+    }
+    
+    // Log first row (headers)
     Logger.log("📋 First row (headers): " + JSON.stringify(data[0]));
     
     if (data.length <= 1) {
@@ -48,20 +64,26 @@ function doGet(e) {
     
     // Skip header row and convert to objects
     const headers = data[0];
+    Logger.log("📑 Number of headers: " + headers.length);
     Logger.log("📑 Headers: " + JSON.stringify(headers));
     
     const transactions = [];
     
+    Logger.log("🔄 Processing rows (total: " + (data.length - 1) + ")");
+    
     for (let i = 1; i < data.length; i++) {
       const row = data[i];
       
-      // Skip empty rows (check if first column is empty)
-      if (!row[0] || row[0] === "") {
-        Logger.log("⏭️  Skipping empty row " + (i + 1));
+      Logger.log("  Row " + i + " content: " + JSON.stringify(row));
+      Logger.log("  Row " + i + " first column value: '" + row[0] + "' (type: " + typeof row[0] + ")");
+      
+      // Skip completely empty rows (check if first column is empty)
+      if (!row[0] || row[0] === "" || (typeof row[0] === 'object' && Object.keys(row[0]).length === 0)) {
+        Logger.log("  ⏭️ Skipping empty row " + i);
         continue;
       }
       
-      Logger.log("📝 Processing row " + (i + 1) + ": " + JSON.stringify(row));
+      Logger.log("  📝 Processing row " + i);
       
       const transaction = {};
       
@@ -71,17 +93,21 @@ function doGet(e) {
       });
       
       transactions.push(transaction);
-      Logger.log("✅ Row " + (i + 1) + " converted: " + JSON.stringify(transaction));
+      Logger.log("  ✅ Row " + i + " converted: " + JSON.stringify(transaction));
     }
     
-    Logger.log("✅ Retrieved " + transactions.length + " transactions");
+    Logger.log("✅ Total transactions found: " + transactions.length);
     
-    return ContentService.createTextOutput(JSON.stringify({
+    const response = {
       success: true,
       data: transactions,
       count: transactions.length,
       timestamp: new Date().toISOString()
-    }))
+    };
+    
+    Logger.log("📤 Returning response: " + JSON.stringify(response));
+    
+    return ContentService.createTextOutput(JSON.stringify(response))
       .setMimeType(ContentService.MimeType.JSON)
       .setHeader("Access-Control-Allow-Origin", "*")
       .setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE");
@@ -436,6 +462,58 @@ function testInsert() {
 
   const result = insertTransaction(testData);
   Logger.log("Test result: " + JSON.stringify(result));
+}
+
+/**
+ * Diagnostic function to check what's in the sheet
+ */
+function diagnoseSheet() {
+  Logger.log("🔍 DIAGNOSTIC TEST");
+  Logger.log("Spreadsheet ID: " + SPREADSHEET_ID);
+  Logger.log("Sheet Name: " + SHEET_NAME);
+  
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    Logger.log("✅ Spreadsheet opened successfully");
+    
+    const sheet = ss.getSheetByName(SHEET_NAME);
+    if (!sheet) {
+      Logger.log("❌ Sheet '" + SHEET_NAME + "' not found!");
+      Logger.log("Available sheets: " + ss.getSheets().map(s => s.getName()).join(", "));
+      return;
+    }
+    
+    Logger.log("✅ Sheet '" + SHEET_NAME + "' found");
+    
+    // Get all data
+    const data = sheet.getDataRange().getValues();
+    Logger.log("📊 Total rows: " + data.length);
+    Logger.log("📊 Total columns: " + (data[0] ? data[0].length : 0));
+    
+    // Log headers
+    if (data.length > 0) {
+      Logger.log("📋 Headers: " + JSON.stringify(data[0]));
+    }
+    
+    // Log all data rows
+    Logger.log("📄 All data rows:");
+    for (let i = 1; i < data.length; i++) {
+      Logger.log("  Row " + (i + 1) + ": " + JSON.stringify(data[i]));
+    }
+    
+    // Count non-empty rows
+    let nonEmptyCount = 0;
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0] && data[i][0] !== "") {
+        nonEmptyCount++;
+      }
+    }
+    Logger.log("✅ Non-empty data rows: " + nonEmptyCount);
+    
+  } catch (error) {
+    Logger.log("❌ Error: " + error.toString());
+    Logger.log("Stack: " + error.stack);
+  }
 }
 
 /**

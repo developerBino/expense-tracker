@@ -636,19 +636,25 @@ function showToast(message, type = 'success') {
  * Update monthly summary
  */
 function updateMonthlySummary() {
-    // This would integrate with localStorage or backend data
-    // For now, it's a placeholder for future integration
     const today = new Date();
     const currentMonth = today.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
     // Retrieve from localStorage if available
     const transactions = JSON.parse(localStorage.getItem('transactions') || '[]');
+    console.log('📊 updateMonthlySummary - Total transactions in localStorage:', transactions.length);
 
-    // Filter by current month
+    // Filter by current month and year
     const monthTransactions = transactions.filter(t => {
-        if (!t.date) return false;
-        return t.date.startsWith(today.getFullYear().toString());
+        if (!t.date) {
+            console.warn('⚠️ Transaction missing date:', t);
+            return false;
+        }
+        const isThisYear = t.date.startsWith(today.getFullYear().toString());
+        console.log('🔍 Checking transaction date:', t.date, '- This year?', isThisYear);
+        return isThisYear;
     });
+
+    console.log('📊 Transactions this year:', monthTransactions.length);
 
     let totalDebit = 0;
     let totalCredit = 0;
@@ -657,12 +663,16 @@ function updateMonthlySummary() {
         const amount = parseFloat(t.amount) || 0;
         if (t.type === 'Debit') {
             totalDebit += amount;
+            console.log('💸 Debit:', amount, '- Running total:', totalDebit);
         } else {
             totalCredit += amount;
+            console.log('💰 Credit:', amount, '- Running total:', totalCredit);
         }
     });
 
     const netTotal = totalCredit - totalDebit;
+
+    console.log('💹 Final Summary - Debit:', totalDebit, 'Credit:', totalCredit, 'Net:', netTotal);
 
     document.getElementById('totalDebit').textContent = `AED ${totalDebit.toFixed(2)}`;
     document.getElementById('totalCredit').textContent = `AED ${totalCredit.toFixed(2)}`;
@@ -991,8 +1001,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
         console.log('📤 Sending to Google Sheets:', dataToSave);
         console.log('📡 API URL:', API_URL);
+        console.log('👤 Current User:', currentUser.name);
 
         try {
+            console.log('🌐 Initiating fetch request...');
             const response = await fetch(API_URL, {
                 method: 'POST',
                 headers: {
@@ -1002,21 +1014,33 @@ document.addEventListener('DOMContentLoaded', function () {
             });
 
             console.log('📊 Response Status:', response.status);
+            console.log('📊 Response OK:', response.ok);
             const responseText = await response.text();
             console.log('📋 Response Text:', responseText);
+            console.log('📋 Response Length:', responseText.length);
 
             if (!response.ok) {
+                console.error('❌ HTTP Error:', response.statusText);
                 throw new Error(`Server error: ${response.statusText} - ${responseText}`);
             }
 
             // Parse response
-            const responseData = JSON.parse(responseText);
-            console.log('✅ Server Response:', responseData);
+            let responseData;
+            try {
+                responseData = JSON.parse(responseText);
+                console.log('✅ Server Response:', responseData);
+            } catch (parseErr) {
+                console.error('❌ Failed to parse response as JSON:', parseErr);
+                console.log('Raw response:', responseText.substring(0, 200));
+                throw new Error('Invalid response from server');
+            }
 
             // Save to localStorage for local summary
             const transactions = JSON.parse(localStorage.getItem('transactions') || '[]');
+            console.log('📦 Current localStorage transactions:', transactions.length);
             transactions.push(dataToSave);
             localStorage.setItem('transactions', JSON.stringify(transactions));
+            console.log('✅ Saved to localStorage. Total transactions:', transactions.length);
 
             showToast('✓ Saved successfully!', 'success');
 
@@ -1027,11 +1051,17 @@ document.addEventListener('DOMContentLoaded', function () {
             currentParsedData = null;
 
             // Update summary and charts
+            console.log('📊 Updating monthly summary...');
             updateMonthlySummary();
+            console.log('📈 Updating charts...');
             updateCharts();
+            
+            console.log('✅ All updates complete');
 
         } catch (error) {
             console.error('❌ Save error:', error);
+            console.error('Error message:', error.message);
+            console.error('Error stack:', error.stack);
             showError(`Failed to save: ${error.message}`);
         } finally {
             setSaveButtonLoading(false);

@@ -3,17 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SMS Expense Tracker</title>
+    <title>CashFlow - Smart Expense Tracker</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <!-- Login/Auth Page -->
     <div id="loginPage" class="page active">
+        <div class="login-background"></div>
         <div class="auth-container">
             <div class="auth-card">
-                <h1 class="auth-title">Expense Tracker</h1>
-                <p class="auth-subtitle">Track your daily expenses together</p>
+                <div class="auth-logo">
+                    <div class="logo-icon">
+                        <i class="fas fa-wallet"></i>
+                    </div>
+                </div>
+                <h1 class="auth-title">CashFlow</h1>
+                <p class="auth-subtitle">Your Smart Expense Companion</p>
                 
                 <form id="loginForm" class="auth-form">
                     <div class="form-group">
@@ -34,8 +41,8 @@
                 </form>
 
                 <div class="auth-info">
-                    <p><strong>5515:</strong> Bino</p>
-                    <p><strong>2131:</strong> Merlin</p>
+                    <p><i class="fas fa-key"></i> <strong>5515:</strong> Bino</p>
+                    <p><i class="fas fa-key"></i> <strong>2131:</strong> Merlin</p>
                 </div>
             </div>
         </div>
@@ -43,17 +50,23 @@
 
     <!-- Main App Page -->
     <div id="appPage" class="page">
-        <div class="container">
-            <!-- Header with User -->
-            <header class="header">
-                <div class="header-top">
-                    <div>
-                        <h1 class="title">SMS Expense Tracker</h1>
-                        <p class="subtitle">Logged in as: <strong id="loggedInUser">-</strong></p>
-                    </div>
-                    <button id="logoutBtn" class="btn btn-small btn-outline">Logout</button>
+        <!-- Top Navigation -->
+        <nav class="navbar">
+            <div class="navbar-container">
+                <div class="navbar-brand">
+                    <i class="fas fa-wallet"></i>
+                    <span>CashFlow</span>
                 </div>
-            </header>
+                <div class="navbar-user">
+                    <span id="loggedInUser" class="user-name">-</span>
+                    <button id="logoutBtn" class="btn btn-logout">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <div class="container">
 
             <!-- Input Section -->
             <section class="card input-section">
@@ -227,6 +240,37 @@
             <div id="errorMessage" class="error-message hidden"></div>
         </div>
     </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4><i class="fas fa-wallet"></i> CashFlow</h4>
+                    <p>Smart expense tracking for smart spending</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Features</h4>
+                    <ul>
+                        <li>SMS Parsing</li>
+                        <li>Smart Analytics</li>
+                        <li>Google Sheets Sync</li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Security</h4>
+                    <ul>
+                        <li>Secure Storage</li>
+                        <li>Data Privacy</li>
+                        <li>Encrypted Sync</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 CashFlow. All rights reserved. | Powered by Google Sheets & Apps Script</p>
+            </div>
+        </div>
+    </footer>
 
     <!-- Toast Notification -->
     <div id="toast" class="toast"></div>

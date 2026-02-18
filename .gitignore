@@ -1,7 +1,7 @@
-# Environment variables
+# Environment variables - ignore all
+.env
 .env.local
 .env.*.local
-.env
 
 # Dependencies
 node_modules/

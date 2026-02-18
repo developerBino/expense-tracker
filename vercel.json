@@ -6,5 +6,10 @@
       "memory": 1024,
       "maxDuration": 60
     }
+  },
+  "env": {
+    "GOOGLE_APPS_SCRIPT_URL": {
+      "description": "Google Apps Script deployment URL for accessing Google Sheets"
+    }
   }
 }

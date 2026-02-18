@@ -30,12 +30,16 @@ function doGet(e) {
     const sheet = ss.getSheetByName(SHEET_NAME);
     if (!sheet) {
       Logger.log("ERROR: Sheet '" + SHEET_NAME + "' not found!");
-      return ContentService.createTextOutput(JSON.stringify({
+      const output = ContentService.createTextOutput(JSON.stringify({
         success: false,
         error: "Sheet '" + SHEET_NAME + "' not found. Available: " + sheetNames,
         data: [],
         count: 0
-      })).setMimeType(ContentService.MimeType.JSON);
+      }));
+      output.setMimeType(ContentService.MimeType.JSON);
+      output.setHeader("Access-Control-Allow-Origin", "*");
+      output.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE");
+      return output;
     }
     
     Logger.log("Sheet found: " + SHEET_NAME);
@@ -47,15 +51,16 @@ function doGet(e) {
     // If only headers or empty
     if (data.length <= 1) {
       Logger.log("No data rows (only headers or empty)");
-      return ContentService.createTextOutput(JSON.stringify({
+      const output = ContentService.createTextOutput(JSON.stringify({
         success: true,
         data: [],
         count: 0,
         timestamp: new Date().toISOString()
-      }))
-        .setMimeType(ContentService.MimeType.JSON)
-        .setHeader("Access-Control-Allow-Origin", "*")
-        .setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE");
+      }));
+      output.setMimeType(ContentService.MimeType.JSON);
+      output.setHeader("Access-Control-Allow-Origin", "*");
+      output.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE");
+      return output;
     }
     
     // Extract headers
@@ -75,11 +80,19 @@ function doGet(e) {
       
       Logger.log("Processing row " + i);
       
-      const transaction = {};
-      headers.forEach((header, index) => {
-        const key = header.toLowerCase().replace(/\s+/g, '_');
-        transaction[key] = row[index];
-      });
+      // Map actual column names to standardized format
+      const transaction = {
+        timestamp: row[0],  // TIMESTAMPS
+        user: row[1],       // NAME
+        date: row[2],       // DATE
+        amount: row[3],     // AMOUNT
+        currency: row[4],   // CURENCY (misspelled in sheet)
+        type: row[5],       // TYPE
+        merchant: row[6],   // MERCHENT (misspelled in sheet)
+        card_last4: row[7], // CARD
+        category: row[8],   // D
+        raw: row[9]         // MESSAGE
+      };
       
       transactions.push(transaction);
       Logger.log("Row " + i + " added: " + JSON.stringify(transaction).substring(0, 100));
@@ -87,25 +100,29 @@ function doGet(e) {
     
     Logger.log("Total transactions: " + transactions.length);
     
-    return ContentService.createTextOutput(JSON.stringify({
+    const output = ContentService.createTextOutput(JSON.stringify({
       success: true,
       data: transactions,
       count: transactions.length,
       timestamp: new Date().toISOString()
-    }))
-      .setMimeType(ContentService.MimeType.JSON)
-      .setHeader("Access-Control-Allow-Origin", "*")
-      .setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE");
+    }));
+    output.setMimeType(ContentService.MimeType.JSON);
+    output.setHeader("Access-Control-Allow-Origin", "*");
+    output.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE");
+    return output;
       
   } catch (error) {
     Logger.log("ERROR in doGet: " + error.toString());
     Logger.log("Stack: " + error.stack);
-    return ContentService.createTextOutput(JSON.stringify({
+    const output = ContentService.createTextOutput(JSON.stringify({
       success: false,
       error: error.toString(),
       data: [],
       count: 0
-    })).setMimeType(ContentService.MimeType.JSON);
+    }));
+    output.setMimeType(ContentService.MimeType.JSON);
+    output.setHeader("Access-Control-Allow-Origin", "*");
+    return output;
   }
 }
 
@@ -419,20 +436,22 @@ function buildResponse(success, message, data = null) {
     Logger.log("Returning response: " + JSON.stringify(response).substring(0, 200));
 
     // Use ContentService for JSON with CORS
-    return ContentService.createTextOutput(JSON.stringify(response))
-      .setMimeType(ContentService.MimeType.JSON)
-      .setHeader("Access-Control-Allow-Origin", "*")
-      .setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-      .setHeader("Access-Control-Allow-Headers", "Content-Type");
+    const output = ContentService.createTextOutput(JSON.stringify(response));
+    output.setMimeType(ContentService.MimeType.JSON);
+    output.setHeader("Access-Control-Allow-Origin", "*");
+    output.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE");
+    output.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    return output;
   } catch (error) {
     Logger.log("ERROR in buildResponse: " + error.toString());
-    return ContentService.createTextOutput(JSON.stringify({
+    const output = ContentService.createTextOutput(JSON.stringify({
       success: false,
       message: "Error building response",
       error: error.toString()
-    }))
-      .setMimeType(ContentService.MimeType.JSON)
-      .setHeader("Access-Control-Allow-Origin", "*");
+    }));
+    output.setMimeType(ContentService.MimeType.JSON);
+    output.setHeader("Access-Control-Allow-Origin", "*");
+    return output;
   }
 }
 

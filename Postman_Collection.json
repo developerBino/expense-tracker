@@ -1,0 +1,141 @@
+{
+  "info": {
+    "_postman_id": "expense-tracker-collection",
+    "name": "Expense Tracker - Google Apps Script",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "GET - Fetch All Transactions",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Access-Control-Allow-Origin",
+            "value": "*"
+          }
+        ],
+        "url": {
+          "raw": "https://script.google.com/macros/s/AKfycbwTYiTPFDFu33_QI4zQVuOJBBoikYOwPehiSBWbmq3Rc7bxcZy19iSAM7zjPFRGqPhFyQ/exec",
+          "protocol": "https",
+          "host": [
+            "script",
+            "google",
+            "com"
+          ],
+          "path": [
+            "macros",
+            "s",
+            "AKfycbwTYiTPFDFu33_QI4zQVuOJBBoikYOwPehiSBWbmq3Rc7bxcZy19iSAM7zjPFRGqPhFyQ",
+            "exec"
+          ]
+        },
+        "description": "Retrieves all transactions from Google Sheets"
+      },
+      "response": []
+    },
+    {
+      "name": "POST - Save Transaction",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"date\": \"2026-02-18\",\n  \"amount\": 50.00,\n  \"currency\": \"AED\",\n  \"type\": \"Debit\",\n  \"merchant\": \"Carrefour\",\n  \"card_last4\": \"9098\",\n  \"category\": \"Groceries\",\n  \"raw\": \"Your debit card XXX9098 was used for AED50.00 at Carrefour\",\n  \"user\": \"Bino\"\n}"
+        },
+        "url": {
+          "raw": "https://script.google.com/macros/s/AKfycbwTYiTPFDFu33_QI4zQVuOJBBoikYOwPehiSBWbmq3Rc7bxcZy19iSAM7zjPFRGqPhFyQ/exec",
+          "protocol": "https",
+          "host": [
+            "script",
+            "google",
+            "com"
+          ],
+          "path": [
+            "macros",
+            "s",
+            "AKfycbwTYiTPFDFu33_QI4zQVuOJBBoikYOwPehiSBWbmq3Rc7bxcZy19iSAM7zjPFRGqPhFyQ",
+            "exec"
+          ]
+        },
+        "description": "Saves a new transaction to Google Sheets"
+      },
+      "response": []
+    },
+    {
+      "name": "POST - Save Transaction (Debit from SMS)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"date\": \"2026-02-13\",\n  \"amount\": 2,\n  \"currency\": \"AED\",\n  \"type\": \"Debit\",\n  \"merchant\": \"UNITED TRANS\",\n  \"card_last4\": \"9098\",\n  \"category\": \"Other\",\n  \"raw\": \"Your debit card XXX9098 linked to acc. XXX910001 was used for AED2.00 on Feb 13 2026  9:06AM at UNITED TRANS,AE. Avl.Bal AED 130.36.\",\n  \"user\": \"Bino\"\n}"
+        },
+        "url": {
+          "raw": "https://script.google.com/macros/s/AKfycbwTYiTPFDFu33_QI4zQVuOJBBoikYOwPehiSBWbmq3Rc7bxcZy19iSAM7zjPFRGqPhFyQ/exec",
+          "protocol": "https",
+          "host": [
+            "script",
+            "google",
+            "com"
+          ],
+          "path": [
+            "macros",
+            "s",
+            "AKfycbwTYiTPFDFu33_QI4zQVuOJBBoikYOwPehiSBWbmq3Rc7bxcZy19iSAM7zjPFRGqPhFyQ",
+            "exec"
+          ]
+        },
+        "description": "Saves the transaction that was parsed from SMS"
+      },
+      "response": []
+    },
+    {
+      "name": "POST - Save Transaction (Credit)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"date\": \"2026-02-18\",\n  \"amount\": 5000,\n  \"currency\": \"AED\",\n  \"type\": \"Credit\",\n  \"merchant\": \"Salary Deposit\",\n  \"card_last4\": \"9098\",\n  \"category\": \"Income\",\n  \"raw\": \"Credit of AED5000.00 received in your account\",\n  \"user\": \"Bino\"\n}"
+        },
+        "url": {
+          "raw": "https://script.google.com/macros/s/AKfycbwTYiTPFDFu33_QI4zQVuOJBBoikYOwPehiSBWbmq3Rc7bxcZy19iSAM7zjPFRGqPhFyQ/exec",
+          "protocol": "https",
+          "host": [
+            "script",
+            "google",
+            "com"
+          ],
+          "path": [
+            "macros",
+            "s",
+            "AKfycbwTYiTPFDFu33_QI4zQVuOJBBoikYOwPehiSBWbmq3Rc7bxcZy19iSAM7zjPFRGqPhFyQ",
+            "exec"
+          ]
+        },
+        "description": "Saves a credit transaction (e.g., salary deposit)"
+      },
+      "response": []
+    }
+  ]
+}

@@ -113,15 +113,13 @@ function doGet(e) {
       .setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE");
       
   } catch (error) {
-    Logger.log("❌ Error in doGet: " + error.toString());
-    Logger.log("Stack: " + error.stack);
+    Logger.log("Error: " + error.toString());
     return ContentService.createTextOutput(JSON.stringify({
       success: false,
       error: error.toString(),
       data: [],
       count: 0
-    }))
-      .setMimeType(ContentService.MimeType.JSON);
+    })).setMimeType(ContentService.MimeType.JSON);
   }
 }
 

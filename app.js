@@ -5,11 +5,8 @@
 // Use the Vercel API endpoint (no CORS issues since it's same origin)
 const API_URL = "/api/submit";
 
-// Codes for authentication
-const AUTH_CODES = {
-    '5515': { name: 'Bino', id: 1 },
-    '2131': { name: 'Merlin', id: 2 }
-};
+// Codes for authentication - will be loaded from /api/auth-config
+let AUTH_CODES = {};
 
 // ==========================================
 // Data Structure
@@ -950,7 +947,44 @@ async function updateCharts() {
 // Initialize & Event Listeners
 // ==========================================
 
-document.addEventListener('DOMContentLoaded', function () {
+/**
+ * Load authentication configuration from API
+ */
+async function loadAuthConfig() {
+    try {
+        const response = await fetch('/api/auth-config');
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.authCodes) {
+                AUTH_CODES = data.authCodes;
+                console.log('✅ Auth codes loaded from server');
+                
+                // Update auth info display
+                const authInfoContainer = document.getElementById('authInfoContainer');
+                if (authInfoContainer) {
+                    let htmlContent = '';
+                    for (const [code, userInfo] of Object.entries(AUTH_CODES)) {
+                        htmlContent += `<p><i class="fas fa-key"></i> <strong>${code}:</strong> ${userInfo.name}</p>`;
+                    }
+                    authInfoContainer.innerHTML = htmlContent;
+                }
+            }
+        }
+    } catch (error) {
+        console.error('⚠️ Failed to load auth config, using default fallback');
+        // Fallback - won't have any codes, forcing server-side validation only
+        AUTH_CODES = {};
+        const authInfoContainer = document.getElementById('authInfoContainer');
+        if (authInfoContainer) {
+            authInfoContainer.innerHTML = '<p><em>Contact administrator for login credentials</em></p>';
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', async function () {
+    // Load authentication configuration first
+    await loadAuthConfig();
+    
     // Restore session or show login
     restoreSession();
 

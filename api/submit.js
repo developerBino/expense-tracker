@@ -12,8 +12,16 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  // Google Apps Script URL - from environment variable
-  const GOOGLE_APPS_SCRIPT_URL = process.env.GOOGLE_APPS_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbwTYiTPFDFu33_QI4zQVuOJBBoikYOwPehiSBWbmq3Rc7bxcZy19iSAM7zjPFRGqPhFyQ/exec';
+  // Google Apps Script URL - from environment variable (REQUIRED)
+  const GOOGLE_APPS_SCRIPT_URL = process.env.GOOGLE_APPS_SCRIPT_URL;
+  
+  if (!GOOGLE_APPS_SCRIPT_URL) {
+    console.error('❌ GOOGLE_APPS_SCRIPT_URL environment variable is not set');
+    return res.status(500).json({
+      success: false,
+      error: 'Server configuration error: Missing GOOGLE_APPS_SCRIPT_URL'
+    });
+  }
 
   // ==========================================
   // GET: Fetch all transactions from Google Sheets

@@ -37,8 +37,6 @@ function doGet(e) {
         count: 0
       }));
       output.setMimeType(ContentService.MimeType.JSON);
-      output.setHeader("Access-Control-Allow-Origin", "*");
-      output.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE");
       return output;
     }
     
@@ -58,8 +56,6 @@ function doGet(e) {
         timestamp: new Date().toISOString()
       }));
       output.setMimeType(ContentService.MimeType.JSON);
-      output.setHeader("Access-Control-Allow-Origin", "*");
-      output.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE");
       return output;
     }
     
@@ -107,8 +103,6 @@ function doGet(e) {
       timestamp: new Date().toISOString()
     }));
     output.setMimeType(ContentService.MimeType.JSON);
-    output.setHeader("Access-Control-Allow-Origin", "*");
-    output.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE");
     return output;
       
   } catch (error) {
@@ -121,7 +115,6 @@ function doGet(e) {
       count: 0
     }));
     output.setMimeType(ContentService.MimeType.JSON);
-    output.setHeader("Access-Control-Allow-Origin", "*");
     return output;
   }
 }
@@ -435,12 +428,9 @@ function buildResponse(success, message, data = null) {
 
     Logger.log("Returning response: " + JSON.stringify(response).substring(0, 200));
 
-    // Use ContentService for JSON with CORS
+    // Use ContentService for JSON (CORS headers handled by Vercel proxy)
     const output = ContentService.createTextOutput(JSON.stringify(response));
     output.setMimeType(ContentService.MimeType.JSON);
-    output.setHeader("Access-Control-Allow-Origin", "*");
-    output.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE");
-    output.setHeader("Access-Control-Allow-Headers", "Content-Type");
     return output;
   } catch (error) {
     Logger.log("ERROR in buildResponse: " + error.toString());
@@ -450,7 +440,6 @@ function buildResponse(success, message, data = null) {
       error: error.toString()
     }));
     output.setMimeType(ContentService.MimeType.JSON);
-    output.setHeader("Access-Control-Allow-Origin", "*");
     return output;
   }
 }

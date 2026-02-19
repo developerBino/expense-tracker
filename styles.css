@@ -220,6 +220,52 @@ body {
     color: #667eea;
 }
 
+.navbar-social {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.social-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #f8f9fb;
+    color: #667eea;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    font-size: 18px;
+}
+
+.social-link:hover {
+    background: #667eea;
+    color: white;
+    transform: translateY(-2px);
+}
+
+.social-link.github:hover {
+    background: #333;
+}
+
+.social-link.email:hover {
+    background: #ea4343;
+}
+
+.social-link.linkedin:hover {
+    background: #0a66c2;
+}
+
+.social-link.whatsapp:hover {
+    background: #25d366;
+}
+
+.social-link.phone:hover {
+    background: #667eea;
+}
+
 .navbar-user {
     display: flex;
     align-items: center;
@@ -767,6 +813,13 @@ canvas {
     color: #667eea;
 }
 
+.footer-social {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
 .footer-bottom {
     text-align: center;
     padding-top: 24px;
@@ -779,6 +832,15 @@ canvas {
 @media (max-width: 768px) {
     .container {
         max-width: 100%;
+    }
+
+    .navbar-container {
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .navbar-social {
+        gap: 12px;
     }
 
     .charts-grid {
@@ -817,6 +879,20 @@ canvas {
         flex-direction: column;
         gap: 12px;
         align-items: flex-start;
+    }
+
+    .navbar-brand {
+        width: 100%;
+    }
+
+    .navbar-social {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .navbar-user {
+        width: 100%;
+        justify-content: flex-start;
     }
 
     .auth-card {

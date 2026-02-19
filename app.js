@@ -819,6 +819,224 @@ function toggleEditSection(show = true) {
 }
 
 /**
+ * Update daily expenses table
+ */
+function updateDailyExpenses() {
+    const transactions = allTransactions;
+    
+    if (transactions.length === 0) {
+        const tbody = document.getElementById('dailyExpensesBody');
+        tbody.innerHTML = '<tr><td colspan="5" class="no-data">No expenses recorded yet</td></tr>';
+        document.getElementById('dailyTotalAmount').textContent = 'AED 0.00';
+        return;
+    }
+
+    // Group transactions by date
+    const groupedByDate = {};
+    let totalAmount = 0;
+
+    transactions.forEach(t => {
+        const date = t.date || new Date().toISOString().split('T')[0];
+        const amount = parseFloat(t.amount) || 0;
+        
+        if (t.type === 'Debit') {
+            totalAmount += amount;
+        }
+
+        if (!groupedByDate[date]) {
+            groupedByDate[date] = [];
+        }
+        groupedByDate[date].push(t);
+    });
+
+    // Sort dates in descending order (newest first)
+    const sortedDates = Object.keys(groupedByDate).sort().reverse();
+
+    // Generate table rows
+    let html = '';
+    sortedDates.forEach(date => {
+        groupedByDate[date].forEach(transaction => {
+            const amount = parseFloat(transaction.amount) || 0;
+            const type = transaction.type || 'Debit';
+            const merchant = transaction.merchant || '-';
+            const category = transaction.category || '-';
+
+            html += `
+                <tr>
+                    <td>${date}</td>
+                    <td>${merchant}</td>
+                    <td><span class="category-badge">${category}</span></td>
+                    <td><span class="type-badge ${type.toLowerCase()}">${type}</span></td>
+                    <td>${type === 'Debit' ? '-' : '+'}AED ${amount.toFixed(2)}</td>
+                </tr>
+            `;
+        });
+    });
+
+    const tbody = document.getElementById('dailyExpensesBody');
+    tbody.innerHTML = html;
+    document.getElementById('dailyTotalAmount').textContent = `AED ${totalAmount.toFixed(2)}`;
+}
+
+/**
+ * Copy daily expenses to clipboard
+ */
+function copyDailyExpenses() {
+    const transactions = allTransactions;
+    
+    if (transactions.length === 0) {
+        showToast('No expenses to copy', 'warning');
+        return;
+    }
+
+    // Create CSV format
+    let csvContent = 'Date,Merchant,Category,Type,Amount\n';
+    let totalAmount = 0;
+
+    transactions.forEach(t => {
+        const date = t.date || new Date().toISOString().split('T')[0];
+        const amount = parseFloat(t.amount) || 0;
+        const merchant = t.merchant || '-';
+        const category = t.category || '-';
+        const type = t.type || 'Debit';
+
+        csvContent += `${date},"${merchant}","${category}",${type},AED ${amount.toFixed(2)}\n`;
+
+        if (type === 'Debit') {
+            totalAmount += amount;
+        }
+    });
+
+    csvContent += `\nTotal Expenses,,,AED ${totalAmount.toFixed(2)}`;
+
+    // Copy to clipboard
+    navigator.clipboard.writeText(csvContent).then(() => {
+        showToast('Daily expenses copied to clipboard!', 'success');
+    }).catch(() => {
+        showToast('Failed to copy', 'error');
+    });
+}
+
+/**
+ * Print daily expenses
+ */
+function printDailyExpenses() {
+    const transactions = allTransactions;
+    
+    if (transactions.length === 0) {
+        showToast('No expenses to print', 'warning');
+        return;
+    }
+
+    // Group transactions by date
+    const groupedByDate = {};
+    let totalAmount = 0;
+
+    transactions.forEach(t => {
+        const date = t.date || new Date().toISOString().split('T')[0];
+        const amount = parseFloat(t.amount) || 0;
+        
+        if (t.type === 'Debit') {
+            totalAmount += amount;
+        }
+
+        if (!groupedByDate[date]) {
+            groupedByDate[date] = [];
+        }
+        groupedByDate[date].push(t);
+    });
+
+    // Create print window
+    const printWindow = window.open('', '', 'height=600,width=800');
+    const sortedDates = Object.keys(groupedByDate).sort().reverse();
+
+    let htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Daily Expenses Report - CashFlow</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 20px; background: white; }
+                .header { text-align: center; margin-bottom: 30px; }
+                .header h1 { margin: 0; color: #333; }
+                .header p { margin: 5px 0; color: #666; }
+                table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+                th { background: #667eea; color: white; padding: 12px; text-align: left; font-weight: bold; }
+                td { padding: 10px 12px; border-bottom: 1px solid #e8eef5; }
+                tr:hover { background: #f8f9fb; }
+                .type-debit { color: #FF6384; font-weight: bold; }
+                .type-credit { color: #4BC0C0; font-weight: bold; }
+                .total-row { background: #667eea08; font-weight: bold; }
+                .footer { text-align: center; margin-top: 30px; color: #999; font-size: 12px; }
+                @media print { body { margin: 0; } .header { page-break-after: avoid; } }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>💰 Daily Expenses Report</h1>
+                <p>CashFlow - Smart Expense Tracker</p>
+                <p>Generated on ${new Date().toLocaleString()}</p>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Merchant</th>
+                        <th>Category</th>
+                        <th>Type</th>
+                        <th>Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+
+    sortedDates.forEach(date => {
+        groupedByDate[date].forEach(transaction => {
+            const amount = parseFloat(transaction.amount) || 0;
+            const type = transaction.type || 'Debit';
+            const typeClass = type === 'Debit' ? 'type-debit' : 'type-credit';
+            const merchant = transaction.merchant || '-';
+            const category = transaction.category || '-';
+            const displayAmount = type === 'Debit' ? `-AED ${amount.toFixed(2)}` : `+AED ${amount.toFixed(2)}`;
+
+            htmlContent += `
+                <tr>
+                    <td>${date}</td>
+                    <td>${merchant}</td>
+                    <td>${category}</td>
+                    <td><span class="${typeClass}">${type}</span></td>
+                    <td>${displayAmount}</td>
+                </tr>
+            `;
+        });
+    });
+
+    htmlContent += `
+                </tbody>
+                <tfoot>
+                    <tr class="total-row">
+                        <td colspan="4">Total Expenses</td>
+                        <td>AED ${totalAmount.toFixed(2)}</td>
+                    </tr>
+                </tfoot>
+            </table>
+            <div class="footer">
+                <p>This is an automated report generated by CashFlow</p>
+            </div>
+        </body>
+        </html>
+    `;
+
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+    
+    // Print after a short delay to ensure content is loaded
+    setTimeout(() => {
+        printWindow.print();
+    }, 250);
+}
+
+/**
  * Update charts with transaction data from Google Sheets
  */
 async function updateCharts() {
@@ -961,6 +1179,9 @@ async function updateCharts() {
             }
         });
     }
+
+    // Update daily expenses table
+    updateDailyExpenses();
 }
 
 // ==========================================
@@ -1226,4 +1447,14 @@ document.addEventListener('DOMContentLoaded', async function () {
      */
     document.getElementById('smsInput').addEventListener('focus', hideError);
     document.getElementById('authCode').addEventListener('focus', hideError);
+
+    /**
+     * Daily Expenses Copy Button
+     */
+    document.getElementById('copyDailyBtn').addEventListener('click', copyDailyExpenses);
+
+    /**
+     * Daily Expenses Print Button
+     */
+    document.getElementById('printDailyBtn').addEventListener('click', printDailyExpenses);
 });

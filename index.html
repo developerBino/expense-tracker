@@ -257,6 +257,45 @@
                 </div>
             </section>
 
+            <!-- Daily Expenses Section -->
+            <section class="card daily-expenses-section">
+                <h2 class="section-title">Daily Expenses</h2>
+
+                <div class="daily-expenses-toolbar">
+                    <button id="copyDailyBtn" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-copy"></i> Copy
+                    </button>
+                    <button id="printDailyBtn" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-print"></i> Print
+                    </button>
+                </div>
+
+                <div id="dailyExpensesTable" class="daily-expenses-table-container">
+                    <table class="daily-expenses-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Merchant</th>
+                                <th>Category</th>
+                                <th>Type</th>
+                                <th>Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dailyExpensesBody">
+                            <tr>
+                                <td colspan="5" class="no-data">No expenses recorded yet</td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr class="daily-total-row">
+                                <td colspan="4"><strong>Daily Total</strong></td>
+                                <td><strong id="dailyTotalAmount">AED 0.00</strong></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </section>
+
             <!-- Error Message -->
             <div id="errorMessage" class="error-message hidden"></div>
         </div>

@@ -89,6 +89,26 @@ function handleLogout() {
 }
 
 /**
+ * Hide the page loader
+ */
+function hidePageLoader() {
+    const loader = document.getElementById('pageLoader');
+    if (loader) {
+        loader.classList.add('hidden');
+    }
+}
+
+/**
+ * Show the page loader
+ */
+function showPageLoader() {
+    const loader = document.getElementById('pageLoader');
+    if (loader) {
+        loader.classList.remove('hidden');
+    }
+}
+
+/**
  * Check if user is logged in, restore session if available
  */
 async function restoreSession() {
@@ -985,8 +1005,14 @@ document.addEventListener('DOMContentLoaded', async function () {
     // Load authentication configuration first
     await loadAuthConfig();
     
+    // Show loader while restoring session and fetching data
+    showPageLoader();
+    
     // Restore session or show login - MUST be awaited
     await restoreSession();
+    
+    // Hide loader after session restoration
+    hidePageLoader();
 
     // Disable save button initially
     document.getElementById('saveBtn').disabled = true;
@@ -1001,8 +1027,12 @@ document.addEventListener('DOMContentLoaded', async function () {
         if (handleLogin(code)) {
             // Clear form
             document.getElementById('loginForm').reset();
+            // Show loader while fetching data
+            showPageLoader();
             // Fetch data from Google Sheets after login
             await updateCharts();
+            // Hide loader after data is loaded
+            hidePageLoader();
         }
     });
 

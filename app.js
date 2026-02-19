@@ -828,32 +828,59 @@ function toggleEditSection(show = true) {
 function getFilteredTransactions() {
     const transactions = allTransactions;
     const today = new Date();
+    const todayStr = today.toISOString().split('T')[0]; // e.g., "2026-02-19"
     const currentYear = today.getFullYear();
     const currentMonth = today.getMonth();
 
+    console.log('📅 Today date string:', todayStr);
+    console.log('🔍 Total transactions:', transactions.length);
+
     if (currentExpenseFilter === 'daily') {
         // Filter for today's transactions
-        const todayStr = today.toISOString().split('T')[0];
-        return transactions.filter(t => {
-            const transactionDate = (t.date || new Date().toISOString().split('T')[0]).split('T')[0];
-            return transactionDate === todayStr;
+        const filtered = transactions.filter(t => {
+            // Get the date part from the transaction
+            // Handle both formats: "2026-02-19" and "2026-02-19T16:44:54.201Z"
+            const transactionDate = (t.date || '').split('T')[0];
+            const matches = transactionDate === todayStr;
+            
+            if (!matches && t.date) {
+                console.log('🔎 Date check - Transaction:', transactionDate, 'Today:', todayStr, 'Match:', matches);
+            }
+            
+            return matches;
         });
+        
+        console.log('📊 Daily filter - Found', filtered.length, 'transactions for today');
+        return filtered;
     } else if (currentExpenseFilter === 'monthly') {
         // Filter for current month
-        return transactions.filter(t => {
-            const transactionDate = new Date(t.date || new Date());
+        const filtered = transactions.filter(t => {
+            // Parse the date string from the date column
+            const dateStr = t.date || '';
+            const transactionDate = new Date(dateStr);
+            
             return transactionDate.getFullYear() === currentYear && 
                    transactionDate.getMonth() === currentMonth;
         });
+        
+        console.log('📊 Monthly filter - Found', filtered.length, 'transactions for current month');
+        return filtered;
     } else if (currentExpenseFilter === 'last-month') {
         // Filter for last month
         const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
         const lastYear = currentMonth === 0 ? currentYear - 1 : currentYear;
-        return transactions.filter(t => {
-            const transactionDate = new Date(t.date || new Date());
+        
+        const filtered = transactions.filter(t => {
+            // Parse the date string from the date column
+            const dateStr = t.date || '';
+            const transactionDate = new Date(dateStr);
+            
             return transactionDate.getFullYear() === lastYear && 
                    transactionDate.getMonth() === lastMonth;
         });
+        
+        console.log('📊 Last month filter - Found', filtered.length, 'transactions for last month');
+        return filtered;
     }
 
     return transactions;
@@ -865,10 +892,17 @@ function getFilteredTransactions() {
 function updateDailyExpenses() {
     const transactions = getFilteredTransactions();
     
+    console.log('🔄 Updating daily expenses table', {
+        filter: currentExpenseFilter,
+        transactionCount: transactions.length,
+        totalTransactions: allTransactions.length
+    });
+    
     if (transactions.length === 0) {
         const tbody = document.getElementById('dailyExpensesBody');
         tbody.innerHTML = '<tr><td colspan="5" class="no-data">No expenses recorded for this period</td></tr>';
         document.getElementById('dailyTotalAmount').textContent = 'AED 0.00';
+        console.log('⚠️  No transactions found for current filter');
         return;
     }
 

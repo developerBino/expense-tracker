@@ -714,8 +714,50 @@ canvas {
 
 .daily-expenses-toolbar {
     display: flex;
-    gap: 12px;
+    gap: 16px;
     margin-bottom: 20px;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.filter-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.filter-btn {
+    padding: 10px 16px;
+    border: 2px solid #e8eef5;
+    background: white;
+    color: #667eea;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.filter-btn:hover {
+    border-color: #667eea;
+    background: #f8f9fb;
+}
+
+.filter-btn.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.action-buttons {
+    display: flex;
+    gap: 12px;
     flex-wrap: wrap;
 }
 
@@ -1107,6 +1149,16 @@ canvas {
         font-size: 16px;
     }
 
+    .filter-buttons {
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .filter-btn {
+        padding: 9px 12px;
+        font-size: 12px;
+    }
+
     .preview-actions,
     .edit-actions {
         grid-template-columns: 1fr;
@@ -1346,6 +1398,41 @@ canvas {
     .preview-value,
     .summary-value {
         font-size: 14px;
+    }
+
+    /* Daily Expenses Mobile */
+    .daily-expenses-toolbar {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .filter-buttons {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .filter-btn {
+        flex: 1;
+        padding: 9px 10px;
+        font-size: 11px;
+        min-width: auto;
+    }
+
+    .action-buttons {
+        width: 100%;
+    }
+
+    .daily-expenses-table {
+        font-size: 12px;
+    }
+
+    .daily-expenses-table th {
+        padding: 10px 8px;
+        font-size: 10px;
+    }
+
+    .daily-expenses-table td {
+        padding: 8px;
     }
 
     .raw-text {

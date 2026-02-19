@@ -262,12 +262,25 @@
                 <h2 class="section-title">Daily Expenses</h2>
 
                 <div class="daily-expenses-toolbar">
-                    <button id="copyDailyBtn" class="btn btn-secondary btn-sm">
-                        <i class="fas fa-copy"></i> Copy
-                    </button>
-                    <button id="printDailyBtn" class="btn btn-secondary btn-sm">
-                        <i class="fas fa-print"></i> Print
-                    </button>
+                    <div class="filter-buttons">
+                        <button class="filter-btn active" data-filter="daily">
+                            <i class="fas fa-calendar-day"></i> Daily
+                        </button>
+                        <button class="filter-btn" data-filter="monthly">
+                            <i class="fas fa-calendar"></i> Monthly
+                        </button>
+                        <button class="filter-btn" data-filter="last-month">
+                            <i class="fas fa-calendar-alt"></i> Last Month
+                        </button>
+                    </div>
+                    <div class="action-buttons">
+                        <button id="copyDailyBtn" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-copy"></i> Copy
+                        </button>
+                        <button id="printDailyBtn" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-print"></i> Print
+                        </button>
+                    </div>
                 </div>
 
                 <div id="dailyExpensesTable" class="daily-expenses-table-container">

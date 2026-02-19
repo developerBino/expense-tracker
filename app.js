@@ -17,6 +17,7 @@ let parsedHistory = []; // To prevent duplicates
 let currentUser = null; // Store current logged-in user
 let charts = {}; // Store chart instances
 let allTransactions = []; // Store transactions fetched from Google Sheets
+let currentExpenseFilter = 'daily'; // Track current filter for daily expenses
 
 // ==========================================
 // Authentication & Page Navigation
@@ -821,12 +822,52 @@ function toggleEditSection(show = true) {
 /**
  * Update daily expenses table
  */
-function updateDailyExpenses() {
+/**
+ * Get filtered transactions based on current filter
+ */
+function getFilteredTransactions() {
     const transactions = allTransactions;
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth();
+
+    if (currentExpenseFilter === 'daily') {
+        // Filter for today's transactions
+        const todayStr = today.toISOString().split('T')[0];
+        return transactions.filter(t => {
+            const transactionDate = (t.date || new Date().toISOString().split('T')[0]).split('T')[0];
+            return transactionDate === todayStr;
+        });
+    } else if (currentExpenseFilter === 'monthly') {
+        // Filter for current month
+        return transactions.filter(t => {
+            const transactionDate = new Date(t.date || new Date());
+            return transactionDate.getFullYear() === currentYear && 
+                   transactionDate.getMonth() === currentMonth;
+        });
+    } else if (currentExpenseFilter === 'last-month') {
+        // Filter for last month
+        const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+        const lastYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+        return transactions.filter(t => {
+            const transactionDate = new Date(t.date || new Date());
+            return transactionDate.getFullYear() === lastYear && 
+                   transactionDate.getMonth() === lastMonth;
+        });
+    }
+
+    return transactions;
+}
+
+/**
+ * Update daily expenses table with filtering
+ */
+function updateDailyExpenses() {
+    const transactions = getFilteredTransactions();
     
     if (transactions.length === 0) {
         const tbody = document.getElementById('dailyExpensesBody');
-        tbody.innerHTML = '<tr><td colspan="5" class="no-data">No expenses recorded yet</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="no-data">No expenses recorded for this period</td></tr>';
         document.getElementById('dailyTotalAmount').textContent = 'AED 0.00';
         return;
     }
@@ -860,10 +901,12 @@ function updateDailyExpenses() {
             const type = transaction.type || 'Debit';
             const merchant = transaction.merchant || '-';
             const category = transaction.category || '-';
+            // Extract just the date part (YYYY-MM-DD)
+            const dateOnly = date.split('T')[0];
 
             html += `
                 <tr>
-                    <td>${date}</td>
+                    <td>${dateOnly}</td>
                     <td>${merchant}</td>
                     <td><span class="category-badge">${category}</span></td>
                     <td><span class="type-badge ${type.toLowerCase()}">${type}</span></td>
@@ -881,8 +924,11 @@ function updateDailyExpenses() {
 /**
  * Copy daily expenses to clipboard
  */
+/**
+ * Copy daily expenses to clipboard
+ */
 function copyDailyExpenses() {
-    const transactions = allTransactions;
+    const transactions = getFilteredTransactions();
     
     if (transactions.length === 0) {
         showToast('No expenses to copy', 'warning');
@@ -895,12 +941,13 @@ function copyDailyExpenses() {
 
     transactions.forEach(t => {
         const date = t.date || new Date().toISOString().split('T')[0];
+        const dateOnly = date.split('T')[0];
         const amount = parseFloat(t.amount) || 0;
         const merchant = t.merchant || '-';
         const category = t.category || '-';
         const type = t.type || 'Debit';
 
-        csvContent += `${date},"${merchant}","${category}",${type},AED ${amount.toFixed(2)}\n`;
+        csvContent += `${dateOnly},"${merchant}","${category}",${type},AED ${amount.toFixed(2)}\n`;
 
         if (type === 'Debit') {
             totalAmount += amount;
@@ -911,7 +958,7 @@ function copyDailyExpenses() {
 
     // Copy to clipboard
     navigator.clipboard.writeText(csvContent).then(() => {
-        showToast('Daily expenses copied to clipboard!', 'success');
+        showToast('Expenses copied to clipboard!', 'success');
     }).catch(() => {
         showToast('Failed to copy', 'error');
     });
@@ -921,7 +968,7 @@ function copyDailyExpenses() {
  * Print daily expenses
  */
 function printDailyExpenses() {
-    const transactions = allTransactions;
+    const transactions = getFilteredTransactions();
     
     if (transactions.length === 0) {
         showToast('No expenses to print', 'warning');
@@ -950,11 +997,15 @@ function printDailyExpenses() {
     const printWindow = window.open('', '', 'height=600,width=800');
     const sortedDates = Object.keys(groupedByDate).sort().reverse();
 
+    let filterLabel = 'Daily';
+    if (currentExpenseFilter === 'monthly') filterLabel = 'Monthly';
+    if (currentExpenseFilter === 'last-month') filterLabel = 'Last Month';
+
     let htmlContent = `
         <!DOCTYPE html>
         <html>
         <head>
-            <title>Daily Expenses Report - CashFlow</title>
+            <title>${filterLabel} Expenses Report - CashFlow</title>
             <style>
                 body { font-family: Arial, sans-serif; margin: 20px; background: white; }
                 .header { text-align: center; margin-bottom: 30px; }
@@ -973,7 +1024,7 @@ function printDailyExpenses() {
         </head>
         <body>
             <div class="header">
-                <h1>💰 Daily Expenses Report</h1>
+                <h1>💰 ${filterLabel} Expenses Report</h1>
                 <p>CashFlow - Smart Expense Tracker</p>
                 <p>Generated on ${new Date().toLocaleString()}</p>
             </div>
@@ -998,10 +1049,11 @@ function printDailyExpenses() {
             const merchant = transaction.merchant || '-';
             const category = transaction.category || '-';
             const displayAmount = type === 'Debit' ? `-AED ${amount.toFixed(2)}` : `+AED ${amount.toFixed(2)}`;
+            const dateOnly = date.split('T')[0];
 
             htmlContent += `
                 <tr>
-                    <td>${date}</td>
+                    <td>${dateOnly}</td>
                     <td>${merchant}</td>
                     <td>${category}</td>
                     <td><span class="${typeClass}">${type}</span></td>
@@ -1457,4 +1509,23 @@ document.addEventListener('DOMContentLoaded', async function () {
      * Daily Expenses Print Button
      */
     document.getElementById('printDailyBtn').addEventListener('click', printDailyExpenses);
+
+    /**
+     * Daily Expenses Filter Buttons
+     */
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            // Remove active class from all buttons
+            document.querySelectorAll('.filter-btn').forEach(b => {
+                b.classList.remove('active');
+            });
+            
+            // Add active class to clicked button
+            this.classList.add('active');
+            
+            // Update filter and refresh table
+            currentExpenseFilter = this.getAttribute('data-filter');
+            updateDailyExpenses();
+        });
+    });
 });

@@ -985,8 +985,8 @@ document.addEventListener('DOMContentLoaded', async function () {
     // Load authentication configuration first
     await loadAuthConfig();
     
-    // Restore session or show login
-    restoreSession();
+    // Restore session or show login - MUST be awaited
+    await restoreSession();
 
     // Disable save button initially
     document.getElementById('saveBtn').disabled = true;

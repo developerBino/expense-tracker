@@ -654,6 +654,17 @@ async function fetchTransactionsFromGoogleSheets() {
             
             allTransactions = transactions;
             console.log('💾 All transactions stored:', allTransactions.length);
+            
+            // Log all transaction dates to debug
+            const allDates = allTransactions.map(t => t.date).sort();
+            console.log('📅 All unique dates in data:', [...new Set(allDates)]);
+            console.log('🔍 Full transaction list:', allTransactions.map(t => ({
+                date: t.date,
+                merchant: t.merchant,
+                amount: t.amount,
+                type: t.type
+            })));
+            
             return transactions;
         } else {
             console.warn('⚠️ No data returned from Google Sheets');
@@ -895,14 +906,22 @@ function updateDailyExpenses() {
     console.log('🔄 Updating daily expenses table', {
         filter: currentExpenseFilter,
         transactionCount: transactions.length,
-        totalTransactions: allTransactions.length
+        totalTransactions: allTransactions.length,
+        allTransactionDates: [...new Set(allTransactions.map(t => t.date))]
     });
     
     if (transactions.length === 0) {
         const tbody = document.getElementById('dailyExpensesBody');
         tbody.innerHTML = '<tr><td colspan="5" class="no-data">No expenses recorded for this period</td></tr>';
         document.getElementById('dailyTotalAmount').textContent = 'AED 0.00';
-        console.log('⚠️  No transactions found for current filter');
+        
+        // Show helpful message if no data for today but data exists
+        if (currentExpenseFilter === 'daily' && allTransactions.length > 0) {
+            const recentDates = [...new Set(allTransactions.map(t => t.date))].sort().reverse().slice(0, 3);
+            console.log('💡 Hint: No today data, but recent dates available:', recentDates);
+            console.log('💡 Try switching to Monthly filter to see all data');
+        }
+        
         return;
     }
 

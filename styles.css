@@ -322,6 +322,11 @@ body {
     color: #333;
     transition: all 0.3s ease;
     background: white;
+    min-height: 44px;
+    font-family: inherit;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
 }
 
 .input:focus {
@@ -350,6 +355,9 @@ body {
     max-height: 300px;
     line-height: 1.6;
     font-weight: 400;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
 }
 
 .textarea:focus {
@@ -377,11 +385,18 @@ body {
     align-items: center;
     justify-content: center;
     gap: 8px;
+    min-height: 48px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+}
+
+.btn:active:not(:disabled) {
+    transform: scale(0.98);
 }
 
 .btn-primary {
@@ -829,23 +844,109 @@ canvas {
 }
 
 /* Responsive Design */
+@media (max-width: 1024px) {
+    .container {
+        padding: 32px 20px;
+    }
+
+    .summary-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
 @media (max-width: 768px) {
     .container {
         max-width: 100%;
+        padding: 24px 16px;
+    }
+
+    .navbar {
+        padding: 12px 0;
     }
 
     .navbar-container {
+        flex-direction: row;
         flex-wrap: wrap;
-        gap: 12px;
+        gap: 16px;
+        align-items: center;
+    }
+
+    .navbar-brand {
+        font-size: 18px;
+        flex: 1;
+        min-width: 150px;
     }
 
     .navbar-social {
-        gap: 12px;
+        gap: 10px;
+        flex: 1;
+        min-width: auto;
+        justify-content: flex-end;
+    }
+
+    .navbar-user {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .user-name {
+        font-size: 13px;
+    }
+
+    .btn-logout {
+        padding: 10px 14px;
+        font-size: 12px;
+    }
+
+    .social-link {
+        width: 32px;
+        height: 32px;
+        font-size: 16px;
+    }
+
+    .card {
+        padding: 24px;
+        margin-bottom: 20px;
+    }
+
+    .section-title {
+        font-size: 18px;
+        margin-bottom: 20px;
+    }
+
+    .input,
+    .textarea {
+        padding: 12px 14px;
+        font-size: 16px;
+    }
+
+    .textarea {
+        min-height: 100px;
+    }
+
+    .btn {
+        padding: 12px 18px;
+        font-size: 14px;
+        min-height: 44px;
+    }
+
+    .btn-primary,
+    .btn-success,
+    .btn-secondary {
+        width: 100%;
+    }
+
+    .label {
+        font-size: 11px;
+    }
+
+    .form-group {
+        margin-bottom: 16px;
     }
 
     .charts-grid {
         grid-template-columns: 1fr;
-        gap: 24px;
+        gap: 20px;
     }
 
     .chart-container {
@@ -854,118 +955,61 @@ canvas {
 
     .edit-grid {
         grid-template-columns: 1fr;
+        gap: 14px;
     }
 
     .preview-grid {
         grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .preview-item {
+        padding: 12px;
+    }
+
+    .preview-value {
+        font-size: 14px;
     }
 
     .summary-grid {
-        grid-template-columns: 1fr 1fr;
-    }
-
-    .preview-actions,
-    .edit-actions {
-        grid-template-columns: 1fr 1fr;
-    }
-}
-
-@media (max-width: 480px) {
-    body {
-        padding: 0;
-    }
-
-    .navbar-container {
-        flex-direction: column;
-        gap: 12px;
-        align-items: flex-start;
-    }
-
-    .navbar-brand {
-        width: 100%;
-    }
-
-    .navbar-social {
-        width: 100%;
-        justify-content: flex-start;
-    }
-
-    .navbar-user {
-        width: 100%;
-        justify-content: flex-start;
-    }
-
-    .auth-card {
-        padding: 28px 20px;
-    }
-
-    .auth-title {
-        font-size: 28px;
-    }
-
-    .logo-icon {
-        width: 64px;
-        height: 64px;
-        font-size: 32px;
-    }
-
-    .container {
-        padding: 20px 16px;
-    }
-
-    .card {
-        padding: 20px;
-        margin-bottom: 16px;
-    }
-
-    .preview-grid,
-    .summary-grid,
-    .edit-grid {
         grid-template-columns: 1fr;
         gap: 12px;
     }
 
-    .preview-actions,
-    .edit-actions {
-        grid-template-columns: 1fr;
+    .summary-item {
+        padding: 16px;
     }
 
-    .charts-grid {
-        grid-template-columns: 1fr;
-        gap: 24px;
-    }
-
-    .chart-container {
-        height: 240px;
-    }
-
-    .btn {
-        font-size: 14px;
-        padding: 12px 16px;
-    }
-
-    .preview-label,
-    .summary-label,
-    .raw-label,
-    .label {
+    .summary-label {
         font-size: 11px;
     }
 
-    .preview-value,
     .summary-value {
-        font-size: 15px;
-    }
-
-    .section-title {
         font-size: 16px;
     }
 
+    .preview-actions,
+    .edit-actions {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .preview-actions .btn,
+    .edit-actions .btn {
+        width: 100%;
+    }
+
     .footer {
-        padding: 32px 20px 16px;
+        padding: 32px 16px 20px;
     }
 
     .footer-content {
+        grid-template-columns: 1fr;
         gap: 24px;
+    }
+
+    .footer-section {
+        text-align: center;
     }
 
     .footer-section h4 {
@@ -974,7 +1018,331 @@ canvas {
 
     .footer-section p,
     .footer-section ul li {
+        font-size: 12px;
+    }
+
+    .footer-social {
+        gap: 12px;
+    }
+}
+
+@media (max-width: 576px) {
+    body {
+        background: #fff;
+    }
+
+    html, body {
+        font-size: 15px;
+    }
+
+    .navbar {
+        padding: 12px 0;
+        position: sticky;
+        top: 0;
+        z-index: 99;
+    }
+
+    .navbar-container {
+        flex-direction: column;
+        gap: 12px;
+        align-items: stretch;
+        padding: 0 12px;
+    }
+
+    .navbar-brand {
+        width: 100%;
+        font-size: 16px;
+        justify-content: space-between;
+    }
+
+    .navbar-brand i {
+        font-size: 20px;
+    }
+
+    .navbar-social {
+        width: 100%;
+        justify-content: space-around;
+        gap: 8px;
+    }
+
+    .navbar-user {
+        width: 100%;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .user-name {
+        font-size: 12px;
+    }
+
+    .btn-logout {
+        padding: 8px 12px;
+        font-size: 11px;
+    }
+
+    .social-link {
+        width: 36px;
+        height: 36px;
+        font-size: 16px;
+    }
+
+    .page-loader {
+        z-index: 9998;
+    }
+
+    .loader-spinner {
+        width: 40px;
+        height: 40px;
+    }
+
+    .loader-text {
+        font-size: 14px;
+    }
+
+    /* Auth Page Mobile */
+    .auth-container {
+        min-height: 100vh;
+        padding: 20px 0;
+    }
+
+    .auth-card {
+        padding: 24px 18px;
+        margin: 20px;
+    }
+
+    .auth-title {
+        font-size: 26px;
+        margin-bottom: 8px;
+    }
+
+    .auth-subtitle {
         font-size: 13px;
+        margin-bottom: 24px;
+    }
+
+    .logo-icon {
+        width: 56px;
+        height: 56px;
+        font-size: 28px;
+    }
+
+    .auth-info {
+        padding: 16px;
+        font-size: 12px;
+        line-height: 1.8;
+    }
+
+    /* Main Content Mobile */
+    .container {
+        padding: 16px 12px;
+        max-width: 100%;
+    }
+
+    .card {
+        padding: 18px;
+        margin-bottom: 14px;
+        border-radius: 12px;
+    }
+
+    .section-title {
+        font-size: 16px;
+        margin-bottom: 16px;
+    }
+
+    .section-title::after {
+        width: 30px;
+    }
+
+    /* Form Elements Mobile */
+    .input-section {
+        padding: 16px;
+    }
+
+    .input,
+    .textarea {
+        padding: 12px;
+        font-size: 16px;
+        border-radius: 8px;
+    }
+
+    .textarea {
+        min-height: 90px;
+        max-height: 240px;
+    }
+
+    .label {
+        font-size: 10px;
+        margin-bottom: 8px;
+    }
+
+    .form-group {
+        margin-bottom: 14px;
+    }
+
+    .btn {
+        padding: 12px 14px;
+        font-size: 13px;
+        border-radius: 8px;
+        min-height: 44px;
+        width: 100%;
+    }
+
+    .btn:active:not(:disabled) {
+        transform: scale(0.98);
+    }
+
+    .btn-primary,
+    .btn-success,
+    .btn-secondary,
+    .btn-danger {
+        width: 100%;
+    }
+
+    .btn-logout {
+        width: auto;
+    }
+
+    /* Grid Layouts Mobile */
+    .edit-grid,
+    .preview-grid,
+    .summary-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .preview-item,
+    .summary-item,
+    .raw-message {
+        padding: 12px;
+        border-radius: 8px;
+    }
+
+    .preview-label,
+    .summary-label,
+    .raw-label {
+        font-size: 10px;
+        margin-bottom: 4px;
+    }
+
+    .preview-value,
+    .summary-value {
+        font-size: 14px;
+    }
+
+    .raw-text {
+        font-size: 11px;
+        max-height: 80px;
+    }
+
+    /* Charts Mobile */
+    .charts-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .chart-container {
+        height: 220px;
+        padding: 12px;
+    }
+
+    /* Actions Mobile */
+    .preview-actions,
+    .edit-actions {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .preview-actions .btn,
+    .edit-actions .btn {
+        width: 100%;
+    }
+
+    /* Footer Mobile */
+    .footer {
+        padding: 24px 12px 16px;
+        background: white;
+        border-top: 1px solid #e8eef5;
+    }
+
+    .footer-container {
+        max-width: 100%;
+    }
+
+    .footer-content {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+
+    .footer-section {
+        text-align: center;
+    }
+
+    .footer-section h4 {
+        font-size: 12px;
+        margin-bottom: 12px;
+    }
+
+    .footer-section p {
+        font-size: 11px;
+        line-height: 1.5;
+    }
+
+    .footer-section ul li {
+        font-size: 11px;
+        padding: 4px 0;
+    }
+
+    .footer-social {
+        gap: 10px;
+        margin-bottom: 16px;
+    }
+
+    .footer-bottom {
+        padding-top: 16px;
+        font-size: 10px;
+        color: #aaa;
+    }
+
+    /* Toast Mobile */
+    .toast {
+        bottom: 16px;
+        left: 12px;
+        right: 12px;
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 360px) {
+    .navbar-social {
+        gap: 4px;
+    }
+
+    .social-link {
+        width: 32px;
+        height: 32px;
+        font-size: 14px;
+    }
+
+    .auth-card {
+        padding: 20px 16px;
+        margin: 16px;
+    }
+
+    .container {
+        padding: 12px 10px;
+    }
+
+    .card {
+        padding: 16px;
+    }
+
+    .section-title {
+        font-size: 15px;
+    }
+
+    .btn {
+        padding: 10px 12px;
+        font-size: 12px;
     }
 }
 
